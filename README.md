@@ -32,7 +32,7 @@ sudo systemctl start cri-docker.service
 
 Modify the parameters
 ```bash
-vim /etc/sysctl.d/cka.conf
+vim /etc/sysctl.d/99-zcka.conf
 ```
 
 ```bash
@@ -44,6 +44,17 @@ net.netfilter.nf_conntrack_max=131072
 
 # Apply the changes
 sudo sysctl --system
+```
+Troubleshoot:
+If the parameter value keeps changing after apply,
+Try to load your file at the last, name it with a high number:
+
+`/etc/sysctl.d/99-zcka.conf`
+
+OR
+To search for the file inside /etc/sysctl.d/ that contains the string net.ipv4.ip_forward, run:
+```
+grep -rl "net.ipv4.ip_forward" /etc/sysctl.d/ /usr/lib/sysctl.d/ /etc/sysctl.conf
 ```
 
 ## 2. Verify cert-manager
@@ -185,6 +196,64 @@ EmptyDir Volume, and 2 volumeMounts to each container
 - Add volume to pod spec
 - Mount `/var/log` in both main and sidecar containers
 
+Step 2: Take a Backup (Recommended)
+Before editing the deployment, take a backup of the current spec:
+
+```bash
+kubectl get deploy neokloud-deployment -o yaml > /root/deploy-backup.yaml
+
+```
+
+Step 3: Edit the Deployment to Add Sidecar
+Edit the deployment using the following command:
+
+```bash
+kubectl edit deploy neokloud-deployment
+```
+
+Changes to do
+
+Inside the editor:
+Add this sidecar container under `spec.template.spec.containers`:
+```yaml
+- name: sidecar
+  image: busybox:stable
+  command: ["/bin/sh", "-c", "tail -f /var/log/neokloud.log"]
+  volumeMounts:
+    - name: shared-logs
+      mountPath: /var/log
+```  
+Add this volumeMounts block to the existing container (e.g., monitor):
+```bash
+volumeMounts:
+  - name: shared-logs
+    mountPath: /var/log
+```
+Add this volumes block under `spec.template.spec`:
+```
+volumes:
+  - name: shared-logs
+    emptyDir: {}
+```
+Save and exit from the editor.
+
+Step 4: Verify Your Changes
+
+Check if the updated pod is running:
+```bash
+kubectl get pods
+
+```
+
+Get the exact pod name, then:
+
+```bash
+kubectl describe pod <pod-name>
+kubectl logs -f <pod-name> -c sidecar
+```
+
+You should now see the sidecar container tailing /var/log/neokloud.log.
+
 ## 7. PVC + Mount to Deployment
 
 **Tasks:**
@@ -201,6 +270,29 @@ helm template argocd argo/argo-cd --version 5.51.6 \
   --set crds.install=false > argocd.yaml
   
 kubectl apply -f argocd.yaml
+```
+Step 1: Add Helm Repo
+```bash
+helm repo add argo https://argoproj.github.io/argo-helm
+helm repo update
+```
+Step 2: Render the Argo CD Manifest
+```
+helm template argo-cd argo/argo-cd \
+  --version 8.0.17 \
+  --namespace argocd \
+  --set crds.install=false > argo-template.yaml
+```
+Step 3: Apply to Cluster
+```
+kubectl create namespace argocd
+kubectl apply -f argo-template.yaml
+```
+Note: CRDs must be installed separately if not already present.
+
+Step 4: Verify Argo CD Pods
+```
+kubectl get pods -n argocd
 ```
 
 ## 10. Divide Node Resources (With Init Containers)
@@ -279,11 +371,13 @@ spec:
 **Calico: Network policy**
 
 ```bash
-curl -sL https://projectcalico.docs.tigera.io/manifests/tigera-operator.yaml | kubectl apply -f -
 
-K apply -f https:tigera-opearator.yaml 
-# If error, use 
-k create -f 
+Dont use k apply -f
+
+curl -sL https://projectcalico.docs.tigera.io/manifests/tigera-operator.yaml | kubectl create -f -
+
+K create -f https:tigera-opearator.yaml 
+
 ```
 
 **Flannel:**
@@ -390,14 +484,15 @@ globalDefault: false
 In Deployment:
 `k edit deploy `
 
+Add the below field in `spec.template.spec`
 ```
-spec:
-  priorityClassName: high-priority
+	spec:
+	  priorityClassName: high-priority
 ```
 
 ## 16. Kubeconfig Extraction
 
-outre asked to extract the following information out of kubeconfig file /opt/course/l/kubeconfig on cka9412 :
+Youre asked to extract the following information out of kubeconfig file /opt/course/l/kubeconfig on cka9412 :
  Write all kubeconfig context names into /opt/course/l/contexts , one per line
  Write the name of the current context into /opt/course/l/current-context
  Write the client-key of user account—base64-  decoded into /opt/course/l/cert
@@ -426,9 +521,12 @@ echo <client-key-data> | base64 -d > /opt/course/l/cert
 
 ## 17. QOS Pods (BestEffort)
 
+
 ```bash
 kubectl get pods -n project-c13 -o custom-columns="NAME:.metadata.name,QOS:.status.qosClass" | grep "BestEffort" | awk '{print $1}' > /opt/course/4/pods-terminated-first.txt
 ```
+
+The file will contain the Pod name
 
 ## 18. Kustomize HPA Migration
 
