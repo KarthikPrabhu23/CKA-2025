@@ -73,15 +73,15 @@ You may use any output format that kubectl supports.
 
 **Solution:**
 
-k get crds | grep cert-manager > ~/resouce.yaml
-OR
 ```bash
-kubectl get crd | grep cert-manager | awk ‘{print $1}’ | xargs -I{} kubectl get crd {} -o yaml >> ~/resources.yaml
+k get crds | grep cert-manager > ~/resouce.yaml
 
 k explain certificates.spec.subject > ~/subject.yaml
 ```
 OR
 ```bash
+kubectl get crd | grep cert-manager | awk ‘{print $1}’ | xargs -I{} kubectl get crd {} -o yaml >> ~/resources.yaml
+
 kubectl get crd certificates.cert-manager.io -o jsonpath='{.spec.versions[*].schema.openAPIV3Schema.properties.spec.properties.subject}' > subject.yaml
 ```
 
@@ -128,7 +128,6 @@ With the following tasks:
 Expose the deployment with a service named echo-service on http://example.org/echo using Service port 8080 type=NodePort
 The availability of Service echo-service can be checked using the following command which should return 200:
 
-
 **Tasks:**
 - Create service named `echo-service` with `type=NodePort` on port 8080
 - Create ingress resource named `echo` in namespace `echo-sound`
@@ -136,14 +135,39 @@ The availability of Service echo-service can be checked using the following comm
 **Solution:**
 
 ```bash
-kubectl expose deployment nginx-deploy --type=NodePort --port=8080 --target-port=8080 -n echo-sound
+kubectl expose deployment nginx-deploy --name=echo-service --type=NodePort --port=8080 --target-port=8080 -n echo-sound
 ```
-Copy ingress.yaml from documentation
+`service/echo-service` should be created.
+
+Copy `ingress.yaml` from documentation
 Vim ingress.yaml
 Add host: {Hostname}
 Add service details, earlier created
 Port number : 8080
 Path: /
+
+```bash
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: echo
+  namespace: echo-sound
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: example.org/echo
+	http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: echo-service
+            port:
+              number: 8080
+```
 ```bash
 # Create ingress.yaml with host `example.org/echo` and path `/`
 kubectl apply -f ingress.yaml
