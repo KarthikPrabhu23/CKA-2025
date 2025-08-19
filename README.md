@@ -146,7 +146,7 @@ Add service details, earlier created
 Port number : 8080
 Path: /
 
-```bash
+```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -189,9 +189,9 @@ k describe ingress web
 
 k get svc
 ```
-get gateway.yaml from documentation
+get `gateway.yaml` from documentation
 Replace values from the info from `k describe ingress`
-```bash
+```yaml
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
@@ -212,7 +212,7 @@ spec:
 `k create -f gateway.yaml`
 
 Copy HTTPRoute from documentation
-```bash
+```yaml
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -258,12 +258,56 @@ backendRefs:
 
 ## 6. Add Sidecar and Shared Volume
 
+Update the existing deployment wordpress, adding a sidecar container named sidecar using the busybox:stable image to the existing pod.
+The new sidecar container has to run the following command : "/bin/sh -c "tail -f /var/log/wordpress.log" use a volume mounted at /var/log to make the log file wordpress.log available to the co-located container
+
+`k edit deployment wordpress`
+
+copy sidecar-deployment.yaml file from the documentation
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wordpress-deployment
+  labels:
+    app: myapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      containers:
+        - name: myapp
+          image: busybox:stable
+          command: ['sh', '-c', 'while true; do echo "logging" >> /opt/logs.txt; sleep 1; done']
+          volumeMounts:
+            - name: sidecar
+              mountPath: /var/log
+      initContainers:
+        - name: logshipper
+          image: busybox:stable
+          restartPolicy: Always
+          command: ["/bin/sh","-c","tail -f /var/log/wordpress.log"]
+          volumeMounts:
+            - name: sidecar
+              mountPath: /var/log
+      volumes:
+        - name: sidecar
+          emptyDir: {}
+```
+-------------------------------
 A legacy app needs to be integrated into the Kubernetes built-in logging architecture (i.e. kubectc logs). Adding a streaming co-located container is a good and common way to accomplish this requirement.
 Task
-Update the existing Deployment synergy-deployment, adding a co-located container named sidecar using the bus box:stable image to the existing Pod.
-The new co-located container has. to run the following command: /bin/sh -c "tail -0±1 -f /var/log/synergy-deployment.log"
-Use a Volume mounted at /var/log to make the log file synergy-deployment.log available to the co located container.
-Do not modify the specification of the existing container other than adding the required.
+- Update the existing Deployment synergy-deployment, adding a co-located container named sidecar using the bus box:stable image to the existing Pod.
+- The new co-located container has. to run the following command: /bin/sh -c "tail -0±1 -f /var/log/synergy-deployment.log"
+- Use a Volume mounted at /var/log to make the log file synergy-deployment.log available to the co located container.
+- Do not modify the specification of the existing container other than adding the required.
 Hint: Use a shared volume to expose the log file between the main application container and the sidecar
 
 **Tasks:**
@@ -324,7 +368,6 @@ Step 4: Verify Your Changes
 Check if the updated pod is running:
 ```bash
 kubectl get pods
-
 ```
 
 Get the exact pod name, then:
@@ -339,20 +382,49 @@ You should now see the sidecar container tailing /var/log/neokloud.log.
 ## 7. PVC + Mount to Deployment
 
 **Tasks:**
-
 - Create a PVC
 - Mount it inside existing Deployment
+
+A Persistent Volume already exists and is retained for reuse.
+Create a PVC named MariaDB in the mariadb namespace as follows
+- Access mode ReadWriteOnce
+- Storage capacity 250Mi
+Edit the maria-deployment in the file located at maria.deploy.yaml to use the newly created PVC.
+Verify that the deployment is running and is stable.
+
+Copy a `pvc.yaml` from documentation
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mariadb
+  namespace: mariadb
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 250Mi
+```
+`k edit deploy mariadb`
+Add the PVC Claim name under `spec.template.spec.volumes.persistentVolumeClaim.claimName`
+
+`k get pvc -n mariadb` should show the status as `Bound`
 
 ## 8. ArgoCD Install with Helm (No CRDs)
 
 ```bash
 helm repo add argo https://github.com/argoproj/argo-helm
 
-helm template argocd argo/argo-cd --version 5.51.6 \
+helm template argocd argo/argo-cd --version 5.51.6 \ --namespace argo
   --set crds.install=false > argocd.yaml
   
 kubectl apply -f argocd.yaml
 ```
+
+OR 
+
 Step 1: Add Helm Repo
 ```bash
 helm repo add argo https://argoproj.github.io/argo-helm
@@ -369,6 +441,13 @@ Step 3: Apply to Cluster
 ```
 kubectl create namespace argocd
 kubectl apply -f argo-template.yaml
+```
+
+```
+helm install argo-cd argo/argo-cd \
+  --version 8.0.17 \
+  --namespace argocd \
+  --set crds.install=false
 ```
 Note: CRDs must be installed separately if not already present.
 
@@ -451,15 +530,11 @@ spec:
 ## 12. Install CNI: Flannel vs Calico
 
 **Calico: Network policy**
-
+Dont use `k apply -f`
 ```bash
-
-Dont use k apply -f
-
 curl -sL https://projectcalico.docs.tigera.io/manifests/tigera-operator.yaml | kubectl create -f -
 
 K create -f https:tigera-opearator.yaml 
-
 ```
 
 **Flannel:**
