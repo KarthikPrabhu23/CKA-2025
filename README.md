@@ -174,7 +174,65 @@ kubectl apply -f ingress.yaml
 ```
 
 ## 5. Gateway API Migration
+You have an existing web application deployed in a Kubernetes cluster using an Ingress resource named web. You must migrate the existing Ingress configuration to the new Kubernetes Gateway API, maintaining the existing HTTPS access configuration.
+Tasks :
+- Create a Gateway resource named web-gateway with hostname gateway.web.k8s.local that maintains the existing TLS and listener configuration from the existing Ingress resource named web.
+- Create an resource named web-route with hostname gateway.web.k8s.local that maintains the existing routing rules from the current Ingress resource named web.
+Note:
+	A named nginx-class is already installed in the cluster.
 
+```bash
+k get secret
+k describe secret web-tls
+
+k describe ingress web
+
+k get svc
+```
+get gateway.yaml from documentation
+Replace values from the info from `k describe ingress`
+```bash
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: web-gateway
+spec:
+  gatewayClassName: nginx-class
+  listeners:
+  - name: https
+    protocol: HTTPS
+    port: 443
+	hostname: "gateway.web.k8s.local"
+	tls:
+	  mode: Terminate
+	  certificateRefs:
+		- kind: Secret
+		  name: web-tls
+```
+`k create -f gateway.yaml`
+
+Copy HTTPRoute from documentation
+```bash
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: web-route
+spec:
+  parentRefs:
+  - name: web-gateway
+  hostnames:
+  - "gateway.web.k8s.local"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: web-service
+      port: 80 // Check from k get svc
+```
+
+-------------------------------------
 The team from Project r500 wants to replace their Ingress (Networking.k8s.io) with a Gateway Api gateway.networking.k8s.io) solution. The old Ingress is available at `/opt/course/13/ingress.yaml`. Perform the following in Namespace `project-r500` and for the already existing Gateway:
 Create a new HTTPRoute named traffic-director which replicates the routes from the old Ingress
 Extend the new HTTPRoute with path /auto which redirects to mobile if the User-Agent is exactly mobile and to desktop otherwise
