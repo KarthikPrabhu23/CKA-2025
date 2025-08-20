@@ -500,7 +500,11 @@ containers:
 ```bash
 k scale deploy wordpress --replicas=3
 ```
+
 ## 11. Least Permissive NetworkPolicy
+
+There are 2 deployments. Frontend in frontend namespace, Backend in backend namespace. Create a Network Policy to have interaction between frontend & backend deployments. 
+The network policy has to be least permissive.
 
 ```yaml
 apiVersion: networking.k8s.io/v1
@@ -524,7 +528,7 @@ spec:
           app: frontend
     ports:
     - protocol: TCP
-      port: 80
+      port: 8080 // check the service
 ```
 
 ## 12. Install CNI: Flannel vs Calico
@@ -544,6 +548,7 @@ Curl -sL https:kube-flannel.yaml
 - Pods will be failing. Do k logs pod-flannel -n kube-flannel
 - K edit cm kube-flannel-cfg -n kube-flannel.
 - Go to net-conf.json> “Network”: “192.168.0.0/16” (Edit with the IP address present in K Logs)
+- k delete pod kube-flannel-**** -n kube-flannel
 
 ```bash
 curl -sL https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml | kubectl apply -f -
@@ -552,6 +557,14 @@ curl -sL https://raw.githubusercontent.com/coreos/flannel/master/Documentation/k
 Edit ConfigMap if logs show issues.
 
 ## 12. HPA with Autoscaling v2
+
+Create a new HorizontalPodAutoscaler [HPA] named apache-server in the autoscale namespace.
+Tasks :
+- This HPA must target the existing deployment called aaachg-deployment in the namespace.
+- Set the HPA to target for CPU usage per Pod.
+- Configure the HPA to have a minimum of 1 pod and maximum of 4 pods. Have to set the downscale stabilization window to 30 seconds.
+
+Copy the 3rd `hpa.yaml` from the documentation
 
 ```yaml
 apiVersion: autoscaling/v2
@@ -565,7 +578,7 @@ spec:
     kind: Deployment
     name: apache-deployment
   minReplicas: 1
-  maxReplicas: 5
+  maxReplicas: 4
   metrics:
   - type: Resource
     resource:
@@ -585,12 +598,18 @@ _(Details not provided)_
 
 ## 14. Expose Deployment via NodePort and Fix Port
 
+There is a deployment named `nodeport-deployment` in the relative namespace.
+Tasks:
+- Configure the deployment so it can be exposed using port 80 and protocol TCP name http.
+- Create a new service named `nodeport-service` exposing the container port 80 and TCP
+- Configure the new Service to also expose the individual pods using Nodeport.
+
 **Tasks:**
 - Edit deployment to expose container port 80
 - Create NodePort service using same label
 
 K edit deploy
-Inside spec.containers
+Inside `spec.template.spec.containers`
 
 ```yaml
 spec:
@@ -605,7 +624,7 @@ spec:
 k get deploy --show-labels #Use the labels while creating the service
 ```
 
-Copy a Nodeport svc file from doc. Replace the labels with the above labels.
+Copy a Nodeport service file from doc. Replace the labels with the above labels.
 
 ```yaml
 apiVersion: v1
@@ -616,7 +635,7 @@ metadata:
 spec:
   type: NodePort
   selector:
-    app: nodeport-deployment
+    app: nodeport-deployment //Labels from the deployment
   ports:
   - port: 80
     protocol: TCP
