@@ -327,7 +327,6 @@ Before editing the deployment, take a backup of the current spec:
 
 ```bash
 kubectl get deploy neokloud-deployment -o yaml > /root/deploy-backup.yaml
-
 ```
 
 Step 3: Edit the Deployment to Add Sidecar
@@ -350,13 +349,13 @@ Add this sidecar container under `spec.template.spec.containers`:
       mountPath: /var/log
 ```  
 Add this volumeMounts block to the existing container (e.g., monitor):
-```bash
+```yaml
 volumeMounts:
   - name: shared-logs
     mountPath: /var/log
 ```
 Add this volumes block under `spec.template.spec`:
-```
+```yaml
 volumes:
   - name: shared-logs
     emptyDir: {}
@@ -438,12 +437,12 @@ helm template argo-cd argo/argo-cd \
   --set crds.install=false > argo-template.yaml
 ```
 Step 3: Apply to Cluster
-```
+```bash
 kubectl create namespace argocd
 kubectl apply -f argo-template.yaml
 ```
 
-```
+```bash
 helm install argo-cd argo/argo-cd \
   --version 8.0.17 \
   --namespace argocd \
@@ -452,7 +451,7 @@ helm install argo-cd argo/argo-cd \
 Note: CRDs must be installed separately if not already present.
 
 Step 4: Verify Argo CD Pods
-```
+```bash
 kubectl get pods -n argocd
 ```
 
@@ -646,9 +645,17 @@ spec:
 
 ## 15. PriorityClass
 
-Get PC from documentation
+You're working in a Kubernetes cluster with an existing Deployment named busybox-logger running in a namespace called priority.
+The cluster already has at least one user-defined Priority Class
+Perform the following tasks:
+1. Create a new Priority Class named high-priority for user workloads. The value of this Priority Class should be exactly one less than the highest existing user-defined Priority Class value.
+2. Patch the existing Deployment busybox-logger in the priority namespace to use the newly created high-priority Priority Class
 
-```
+Get `PC.yaml` from documentation
+
+Do `k get pc` to find the value of highest priority.
+The PriorityClass which starts with a prefix of `system-` are not user-defined PriorityClass. Don't consider their value.
+```yaml
 apiVersion: scheduling.k8s.io/v1
 kind: PriorityClass
 metadata:
@@ -656,6 +663,11 @@ metadata:
 value: 100000
 globalDefault: false
 ```
+```bash
+kubectl patch deploy -n priority busybox-logger -p '{"spec":{"template":{"spec":{"priorityClassName":"high-priority"}}}}'
+deployment.apps/busybox-logger patched
+```
+OR edit the deployment:-
 
 In Deployment:
 `k edit deploy `
@@ -1152,9 +1164,9 @@ Store in:
 ## 30. Create StorageClass local-kiddie
 
 Create a new named local-kiddie with the provisioner rancher. io/local-path.
-set the volumeBindingMode to WaitForFirstConsumer
-Configure the StorageClass to default StorageClass
-Do not modify any existing Deployment or PersistentVolumeClaim
+- Set the volumeBindingMode to WaitForFirstConsumer
+- Configure the StorageClass to default StorageClass
+- Do not modify any existing Deployment or PersistentVolumeClaim
 
 **Solution:**
 
@@ -1176,3 +1188,5 @@ kubectl apply -f storageclass.yaml
 ```
 
 make `storageclass.kubernetes.io/is-default-class: "false"` for the other StorageClass
+Use patch
+`k patch sc local-kiddie -p '{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class:"true"}}}'`
