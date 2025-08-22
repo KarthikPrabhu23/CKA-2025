@@ -537,8 +537,21 @@ Dont use `k apply -f`
 ```bash
 curl -sL https://projectcalico.docs.tigera.io/manifests/tigera-operator.yaml | kubectl create -f -
 
-K create -f https:tigera-opearator.yaml 
+K create -f https:tigera-operator.yaml 
 ```
+
+`k get pods` should show 1 running pod `tigera-operator-******`
+
+```bash
+kubectl cluster-info dump | grep -i cluster-cidr
+>>>> --cluster-cidr=<COPY-THIS-CIDR>,
+```
+
+```bash
+wget https://raw.githubusercontent.com/projectcalico/calico/v3.28.3/manifests/custom-resources.yaml
+```
+
+`vim custom-resources.yaml` and replace the `cidr:` with the above copied cidr value.
 
 **Flannel:**
 
