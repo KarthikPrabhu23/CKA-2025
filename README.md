@@ -535,9 +535,9 @@ spec:
 **Calico: Network policy**
 Dont use `k apply -f`
 ```bash
-curl -sL https://projectcalico.docs.tigera.io/manifests/tigera-operator.yaml | kubectl create -f -
+curl -sL https://raw.githubusercontent.com/projectcalico/calico/v3.28.3/manifests/tigera-operator.yaml | kubectl create -f -
 
-K create -f https:tigera-operator.yaml 
+K create -f tigera-operator.yaml 
 ```
 
 `k get pods` should show 1 running pod `tigera-operator-******`
