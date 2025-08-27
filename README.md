@@ -500,6 +500,41 @@ containers:
 k scale deploy wordpress --replicas=3
 ```
 
+---
+K describe node | grep -A5 "Allocatable"
+
+Calculation Breakdown
+Reserve Overhead:
+Let's reserve about 15% for node/system overhead:
+	- CPU overhead: {Actual CPU} * 0.15 = {A-Cpu} Reserve cores
+	- Memory overhead: {Actual Memory} * 0.15 = {A-Mem} Reserve
+Usable for Pods:
+	- CPU:  {Actual CPU} -  {A-Cpu} Reserve  = {B-CPU}
+	- Memory:  {Actual Memory} -  {A-Mem} Reserve = {B-Mem}
+Divide by 3 Pods:
+	- CPU per Pod:  {B-CPU} / 3 = {C-CPU} and round to off (conservative & stable)
+	- Memory per Pod:  {B-Mem} / 3 = {C-Mem} round it off
+
+
+K scale deployment wordpress -n namespace --replicas=0
+
+K edit deployment wordpress
+
+Edit inside both the containers
+Edit in spec.template.spec.containers.resources.requests
+
+
+controlplane:~$ kubectl describe node I grep -A5 "Allocatable"
+Capacity:
+	cpu: 1
+	ephemeral-storage: 19221248Ki
+	hugepages-2Mi : 0
+	memory: 2015360Ki
+	pods: 110
+
+
+---
+
 ## 11. Least Permissive NetworkPolicy
 
 There are 2 deployments. Frontend in frontend namespace, Backend in backend namespace. Create a Network Policy to have interaction between frontend & backend deployments. 
@@ -532,7 +567,7 @@ spec:
 
 ## 12. Install CNI: Flannel vs Calico
 
-**Calico: Network policy**
+### **Calico: Network policy**
 Dont use `k apply -f`
 ```bash
 curl -sL https://raw.githubusercontent.com/projectcalico/calico/v3.28.3/manifests/tigera-operator.yaml | kubectl create -f -
@@ -553,7 +588,10 @@ wget https://raw.githubusercontent.com/projectcalico/calico/v3.28.3/manifests/cu
 
 `vim custom-resources.yaml` and replace the `cidr:` with the above copied cidr value.
 
-**Flannel:**
+`k create -f custom-resources.yaml` Will take 4-5 minutes to create all the pods.
+`k get pods -n calico-system` to check if all the pods are running.
+
+### **Flannel:**
 
 Curl -sL https:kube-flannel.yaml
 - K apply -f https://flannel.yaml
@@ -1203,3 +1241,42 @@ kubectl apply -f storageclass.yaml
 make `storageclass.kubernetes.io/is-default-class: "false"` for the other StorageClass
 Use patch
 `k patch sc local-kiddie -p '{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class:"true"}}}'`
+
+----
+
+## 31. ETCD Repair
+
+15. etcd Repair
+The cluster configured by kubeadm has been migrated to a new machine. It requires configuration changes to run successfully.
+Task
+- Repair the single — node cluster damaged during machine migration.
+- First, identify the damaged cluster components and investigate the causes of their damage.
+Note: The decommissioned cluster uses an external etcd server. Next, repair the configuration of all damaged cluster components.
+Note: Ensure that all necessary services and components are restarted for the changes to take effect. Failure to do so may result in a score reduction. Finally, ensure the cluster is running normally. Ensure: Each node and all Pods are in the Ready state.
+
+
+`K get pods` (Will not work)
+
+```bash
+Vim /etc/kubernetes/manifest/kube-apiserver.yaml
+```
+
+Search for and correct the address
+`/etcd-servers=https://127.0.0.1:2379`
+
+```bash
+Systemctl daemon-reload
+Systemctl restart kubelet.service
+
+K get pods -n kube-system
+```
+Kube-scheduler will be failing
+
+```bash
+Vim /etc/kubernetes/manifests/kube-scheduler.yaml
+```
+
+Search for /resources 
+Reduce CPU request to 100m
+
+---
