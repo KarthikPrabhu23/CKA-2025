@@ -33,6 +33,10 @@ sudo systemctl start cri-docker.service
 Modify the parameters
 ```bash
 vim /etc/sysctl.d/99-zcka.conf
+
+OR
+
+vim /etc/sysctl.conf
 ```
 
 ```bash
@@ -45,6 +49,8 @@ net.netfilter.nf_conntrack_max=131072
 # Apply the changes
 sudo sysctl --system
 ```
+
+Verify the changes with `sudo sysctl -p`
 Troubleshoot:
 If the parameter value keeps changing after apply,
 Try to load your file at the last, name it with a high number:
@@ -57,7 +63,7 @@ To search for the file inside /etc/sysctl.d/ that contains the string net.ipv4.i
 grep -rl "net.ipv4.ip_forward" /etc/sysctl.d/ /usr/lib/sysctl.d/ /etc/sysctl.conf
 ```
 
-## 2. Verify cert-manager
+## 2. Verify cert-manager CRD
 
 Create a list of all cert-manager Custom Resource Definitions (CRDs) and save it to ~/resources.yaml.
 Make sure kubectl's default output format and use kubectl to list CRD's.
