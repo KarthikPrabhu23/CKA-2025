@@ -573,7 +573,7 @@ spec:
 
 ## 12. Install CNI: Flannel vs Calico
 
-### **Calico: Network policy**
+### i) **Calico: Network policy**
 Dont use `k apply -f`
 ```bash
 curl -sL https://raw.githubusercontent.com/projectcalico/calico/v3.28.3/manifests/tigera-operator.yaml | kubectl create -f -
@@ -597,20 +597,21 @@ wget https://raw.githubusercontent.com/projectcalico/calico/v3.28.3/manifests/cu
 `k create -f custom-resources.yaml` Will take 4-5 minutes to create all the pods.
 `k get pods -n calico-system` to check if all the pods are running.
 
-### **Flannel:**
-
-Curl -sL https:kube-flannel.yaml
-- K apply -f https://flannel.yaml
-- Pods will be failing. Do k logs pod-flannel -n kube-flannel
-- K edit cm kube-flannel-cfg -n kube-flannel.
-- Go to net-conf.json> “Network”: “192.168.0.0/16” (Edit with the IP address present in K Logs)
-- k delete pod kube-flannel-**** -n kube-flannel
+### ii) **Flannel:**
 
 ```bash
 curl -sL https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml | kubectl apply -f -
 ```
 
-Edit ConfigMap if logs show issues.
+- Pods will be failing.
+- Copy the IP Address from `net-conf.json> “Network”: “192.168.0.0/16”` or from the logs 
+  ```bash
+   k logs pod-flannel -n kube-flannel
+  ```
+- `k edit cm kube-flannel-cfg -n kube-flannel`
+- `k delete pod kube-flannel-**** -n kube-flannel`
+
+- The Daemonset will create new pods of flannel, and it'll work.
 
 ## 12. HPA with Autoscaling v2
 
