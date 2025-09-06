@@ -507,29 +507,34 @@ k scale deploy wordpress --replicas=3
 ```
 
 ---
-K describe node | grep -A5 "Allocatable"
+`k describe node | grep -A5 "Allocatable"`
 
-Calculation Breakdown
-Reserve Overhead:
-Let's reserve about 15% for node/system overhead:
+Calculation Breakdown:
+- Reserve Overhead:
+1. Let's reserve about 15% for node/system overhead:
 	- CPU overhead: {Actual CPU} * 0.15 = {A-Cpu} Reserve cores
 	- Memory overhead: {Actual Memory} * 0.15 = {A-Mem} Reserve
-Usable for Pods:
-	- CPU:  {Actual CPU} -  {A-Cpu} Reserve  = {B-CPU}
-	- Memory:  {Actual Memory} -  {A-Mem} Reserve = {B-Mem}
-Divide by 3 Pods:
+2. Usable for Pods:
+	- CPU:  {Actual CPU} - {A-Cpu} Reserve  = {B-CPU}
+	- Memory:  {Actual Memory} - {A-Mem} Reserve = {B-Mem}
+3. Divide by 3 Pods:
 	- CPU per Pod:  {B-CPU} / 3 = {C-CPU} and round to off (conservative & stable)
 	- Memory per Pod:  {B-Mem} / 3 = {C-Mem} round it off
 
 
-K scale deployment wordpress -n namespace --replicas=0
+```bash
+k scale deployment wordpress -n namespace --replicas=0
+```
 
-K edit deployment wordpress
+```bash
+k edit deployment wordpress`
+```
 
 Edit inside both the containers
-Edit in spec.template.spec.containers.resources.requests
+Edit in `spec.template.spec.containers.resources.requests`
 
 
+```bash
 controlplane:~$ kubectl describe node I grep -A5 "Allocatable"
 Capacity:
 	cpu: 1
@@ -537,7 +542,7 @@ Capacity:
 	hugepages-2Mi : 0
 	memory: 2015360Ki
 	pods: 110
-
+```
 
 ---
 
