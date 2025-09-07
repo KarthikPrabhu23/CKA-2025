@@ -265,11 +265,11 @@ backendRefs:
 ## 6. Add Sidecar and Shared Volume
 
 Update the existing deployment wordpress, adding a sidecar container named sidecar using the busybox:stable image to the existing pod.
-The new sidecar container has to run the following command : "/bin/sh -c "tail -f /var/log/wordpress.log" use a volume mounted at /var/log to make the log file wordpress.log available to the co-located container
+The new sidecar container has to run the following command : `"/bin/sh -c "tail -f /var/log/wordpress.log"` use a volume mounted at `/var/log` to make the log file `wordpress.log` available to the co-located container
 
 `k edit deployment wordpress`
 
-copy sidecar-deployment.yaml file from the documentation
+copy `sidecar-deployment.yaml` file from the documentation
 
 ```yaml
 apiVersion: apps/v1
@@ -310,9 +310,9 @@ spec:
 -------------------------------
 A legacy app needs to be integrated into the Kubernetes built-in logging architecture (i.e. kubectc logs). Adding a streaming co-located container is a good and common way to accomplish this requirement.
 Task
-- Update the existing Deployment synergy-deployment, adding a co-located container named sidecar using the bus box:stable image to the existing Pod.
-- The new co-located container has. to run the following command: /bin/sh -c "tail -0±1 -f /var/log/synergy-deployment.log"
-- Use a Volume mounted at /var/log to make the log file synergy-deployment.log available to the co located container.
+- Update the existing Deployment synergy-deployment, adding a co-located container named sidecar using the `busybox:stable` image to the existing Pod.
+- The new co-located container has. to run the following command: `/bin/sh -c "tail -f /var/log/synergy-deployment.log"`
+- Use a Volume mounted at `/var/log` to make the log file synergy-deployment.log available to the co located container.
 - Do not modify the specification of the existing container other than adding the required.
 Hint: Use a shared volume to expose the log file between the main application container and the sidecar
 
@@ -321,9 +321,9 @@ Hint: Use a shared volume to expose the log file between the main application co
 - Share `/var/log/synergy-deployment.log` via `emptyDir` volume
 
 **Solution:**
-
-Add a container,
-EmptyDir Volume, and 2 volumeMounts to each container
+1. Add a container,
+2. EmptyDir Volume,
+3. 2 volumeMounts to each container
 
 - Add volume to pod spec
 - Mount `/var/log` in both main and sidecar containers
@@ -333,6 +333,10 @@ Before editing the deployment, take a backup of the current spec:
 
 ```bash
 kubectl get deploy neokloud-deployment -o yaml > /root/deploy-backup.yaml
+
+OR
+
+cp source_file copy_file
 ```
 
 Step 3: Edit the Deployment to Add Sidecar
@@ -342,10 +346,9 @@ Edit the deployment using the following command:
 kubectl edit deploy neokloud-deployment
 ```
 
-Changes to do
+**Changes to do**:
 
-Inside the editor:
-Add this sidecar container under `spec.template.spec.containers`:
+1. Add this sidecar container under `spec.template.spec.containers`:
 ```yaml
 - name: sidecar
   image: busybox:stable
@@ -353,19 +356,21 @@ Add this sidecar container under `spec.template.spec.containers`:
   volumeMounts:
     - name: shared-logs
       mountPath: /var/log
-```  
-Add this volumeMounts block to the existing container (e.g., monitor):
-```yaml
-volumeMounts:
-  - name: shared-logs
-    mountPath: /var/log
 ```
-Add this volumes block under `spec.template.spec`:
+2. Add this volumes block under `spec.template.spec`:
 ```yaml
 volumes:
   - name: shared-logs
     emptyDir: {}
 ```
+
+3. Add this volumeMounts block to the existing container (e.g., monitor):
+```yaml
+volumeMounts:
+  - name: shared-logs
+    mountPath: /var/log
+```
+
 Save and exit from the editor.
 
 Step 4: Verify Your Changes
