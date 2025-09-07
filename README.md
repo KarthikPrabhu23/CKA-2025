@@ -65,11 +65,11 @@ grep -rl "net.ipv4.ip_forward" /etc/sysctl.d/ /usr/lib/sysctl.d/ /etc/sysctl.con
 
 ## 2. Verify cert-manager CRD
 
-Create a list of all cert-manager Custom Resource Definitions (CRDs) and save it to ~/resources.yaml.
+Create a list of all cert-manager Custom Resource Definitions (CRDs) and save it to `~/resources.yaml`.
 Make sure kubectl's default output format and use kubectl to list CRD's.
 Do not set an output format.
 Failure to do so will result in a reduced score.
-Using kubectl, extract the documentation for the subject specification field of the Certificate Custom Resource and save it to ~/subject.yaml.
+Using kubectl, extract the documentation for the subject specification field of the Certificate Custom Resource and save it to `~/subject.yaml`.
 You may use any output format that kubectl supports.
 
 **Tasks:**
@@ -93,8 +93,8 @@ kubectl get crd certificates.cert-manager.io -o jsonpath='{.spec.versions[*].sch
 
 ## 3. TLS Update in ConfigMap
 
-An NGINX Deploy named nginx-static is Running in the nginx-static NS. It is configured using a CfgMap named nginx-config. Update the nginx-config CfgMap to allow only TLSv1.3 connections.re-create, restart, or scale resources as necessary. By 1 using command to test the changes: 
-curl --tls-max 1.2 https://web.k8s.local
+An NGINX Deploy named `nginx-static` is running in the `nginx-static` NS. It is configured using a CfgMap named `nginx-config`. Update the nginx-config CfgMap to allow only TLSv1.3 connections. Re-create, restart, or scale resources as necessary. By 1 using command to test the changes: 
+`curl --tls-max 1.2 https://web.k8s.local`
 As TLSV1.2 should not be allowed anymore, the command should fail
 
 **Tasks:**
@@ -129,10 +129,10 @@ K create -f deploy.yaml
 
 ## 4. Create Ingress for Deployment
 
-Create a new ingress resource named echo in echo-sound namespace
+Create a new ingress resource named `echo` in `echo-sound` namespace.
 With the following tasks:
-Expose the deployment with a service named echo-service on http://example.org/echo using Service port 8080 type=NodePort
-The availability of Service echo-service can be checked using the following command which should return 200:
+Expose the deployment with a service named `echo-service` on `http://example.org/echo` using `Service port 8080 type=NodePort`
+The availability of Service `echo-service` can be checked using the following command which should return 200:
 
 **Tasks:**
 - Create service named `echo-service` with `type=NodePort` on port 8080
@@ -146,11 +146,11 @@ kubectl expose deployment nginx-deploy --name=echo-service --type=NodePort --por
 `service/echo-service` should be created.
 
 Copy `ingress.yaml` from documentation
-Vim ingress.yaml
-Add host: {Hostname}
+Vim `ingress.yaml`
+Add `host: {Hostname}`
 Add service details, earlier created
-Port number : 8080
-Path: /
+`Port number : 8080`
+`Path: /`
 
 ```yaml
 apiVersion: networking.k8s.io/v1
@@ -180,12 +180,12 @@ kubectl apply -f ingress.yaml
 ```
 
 ## 5. Gateway API Migration
-You have an existing web application deployed in a Kubernetes cluster using an Ingress resource named web. You must migrate the existing Ingress configuration to the new Kubernetes Gateway API, maintaining the existing HTTPS access configuration.
+You have an existing web application deployed in a Kubernetes cluster using an Ingress resource named `web`. You must migrate the existing Ingress configuration to the new Kubernetes Gateway API, maintaining the existing HTTPS access configuration.
 Tasks :
-- Create a Gateway resource named web-gateway with hostname gateway.web.k8s.local that maintains the existing TLS and listener configuration from the existing Ingress resource named web.
-- Create an resource named web-route with hostname gateway.web.k8s.local that maintains the existing routing rules from the current Ingress resource named web.
+- Create a Gateway resource named `web-gateway` with hostname `gateway.web.k8s.local` that maintains the existing TLS and listener configuration from the existing Ingress resource named `web`.
+- Create an resource named `web-route` with hostname `gateway.web.k8s.local` that maintains the existing routing rules from the current Ingress resource named `web`.
 Note:
-	A named nginx-class is already installed in the cluster.
+	A GatewayClass named `nginx-class` is already installed in the cluster.
 
 ```bash
 k get secret
@@ -394,10 +394,10 @@ You should now see the sidecar container tailing /var/log/neokloud.log.
 - Mount it inside existing Deployment
 
 A Persistent Volume already exists and is retained for reuse.
-Create a PVC named MariaDB in the mariadb namespace as follows
-- Access mode ReadWriteOnce
-- Storage capacity 250Mi
-Edit the maria-deployment in the file located at maria.deploy.yaml to use the newly created PVC.
+Create a PVC named `MariaDB` in the mariadb namespace as follows
+- Access mode `ReadWriteOnce`
+- Storage capacity `250Mi`
+Edit the `maria-deployment` in the file located at `maria-deploy.yaml` to use the newly created PVC.
 Verify that the deployment is running and is stable.
 
 Copy a `pvc.yaml` from documentation
@@ -551,7 +551,7 @@ Capacity:
 
 ## 11. Least Permissive NetworkPolicy
 
-There are 2 deployments. Frontend in frontend namespace, Backend in backend namespace. Create a Network Policy to have interaction between frontend & backend deployments. 
+There are 2 deployments. Frontend in `frontend` namespace, Backend in `backend` namespace. Create a Network Policy to have interaction between frontend & backend deployments. 
 The network policy has to be least permissive.
 
 ```yaml
@@ -623,9 +623,9 @@ curl -sL https://raw.githubusercontent.com/coreos/flannel/master/Documentation/k
 
 ## 12. HPA with Autoscaling v2
 
-Create a new HorizontalPodAutoscaler [HPA] named apache-server in the autoscale namespace.
+Create a new HorizontalPodAutoscaler [HPA] named `apache-server` in the `autoscale` namespace.
 Tasks :
-- This HPA must target the existing deployment called aaachg-deployment in the namespace.
+- This HPA must target the existing deployment called `apache-deployment` in the namespace.
 - Set the HPA to target for CPU usage per Pod.
 - Configure the HPA to have a minimum of 1 pod and maximum of 4 pods. Have to set the downscale stabilization window to 30 seconds.
 
@@ -665,7 +665,7 @@ _(Details not provided)_
 
 There is a deployment named `nodeport-deployment` in the relative namespace.
 Tasks:
-- Configure the deployment so it can be exposed using port 80 and protocol TCP name http.
+- Configure the deployment so it can be exposed using port `80` and protocol `TCP` name http.
 - Create a new service named `nodeport-service` exposing the container port 80 and TCP
 - Configure the new Service to also expose the individual pods using Nodeport.
 
@@ -711,11 +711,11 @@ spec:
 
 ## 15. PriorityClass
 
-You're working in a Kubernetes cluster with an existing Deployment named busybox-logger running in a namespace called priority.
+You're working in a Kubernetes cluster with an existing Deployment named `busybox-logger` running in a namespace called `priority`.
 The cluster already has at least one user-defined Priority Class
 Perform the following tasks:
-1. Create a new Priority Class named high-priority for user workloads. The value of this Priority Class should be exactly one less than the highest existing user-defined Priority Class value.
-2. Patch the existing Deployment busybox-logger in the priority namespace to use the newly created high-priority Priority Class
+1. Create a new Priority Class named `high-priority` for user workloads. The value of this Priority Class should be exactly one less than the highest existing user-defined Priority Class value.
+2. Patch the existing Deployment `busybox-logger` in the `priority` namespace to use the newly created high-priority Priority Class.
 
 Get `PC.yaml` from documentation
 
@@ -746,10 +746,10 @@ Add the below field in `spec.template.spec`
 
 ## 16. Kubeconfig Extraction
 
-Youre asked to extract the following information out of kubeconfig file /opt/course/l/kubeconfig on cka9412 :
- Write all kubeconfig context names into /opt/course/l/contexts , one per line
- Write the name of the current context into /opt/course/l/current-context
- Write the client-key of user account—base64-  decoded into /opt/course/l/cert
+Youre asked to extract the following information out of kubeconfig file `/opt/course/l/kubeconfig` on cka9412 :
+ Write all kubeconfig context names into `/opt/course/l/contexts` , one per line
+ Write the name of the current context into `/opt/course/l/current-context`
+ Write the client-key of user account—base64-  decoded into `/opt/course/l/cert`
 
 **Tasks:**
 
