@@ -907,11 +907,12 @@ kubectl top pod --containers
 **Solution:**
 ### Upgrade Node
 
+```bash
 controlplane:~$ k get nodes -o wide
 NAME           STATUS   ROLES           AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION     CONTAINER-RUNTIME
 controlplane   Ready    control-plane   25d   v1.34.1   172.30.1.2    <none>        Ubuntu 24.04.1 LTS   6.8.0-51-generic   containerd://1.7.27
 node01         Ready    <none>          25d   v1.33.2   172.30.2.2    <none>        Ubuntu 24.04.1 LTS   6.8.0-51-generic   containerd://1.7.27
-
+```
       
 ssh node01
 
