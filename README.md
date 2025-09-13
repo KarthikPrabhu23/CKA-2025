@@ -473,14 +473,19 @@ K describe node node01
 ```
 
 Check cpu, memory in Allocatable section
-Expr memory number / 1024
-Check the Memory requests in describe node. Expr the result – (sum of memory request)
-Expr result * 0.10 | bc. 
-Expr earlier result – new_result
-Expr result / 3 will give the allocateable memory for each of the 3 pods
+- A = memory number / 1024
+Check the Memory requests in describe node.
+- B = {A} – (sum of memory request)
+- C = {B} * 0.10 | bc. 
+Expr {B} – {C}
+Expr {B - C} / 3 will give the allocateable memory for each of the 3 pods
+
+ (((Allocatable Mem / 1024) – (sum of memory request)) - (B * 0.10))/ 3
+
 Do it similarly for CPU
 The calculation values are the ‘requests’. Limits should be declared slightly higher
-K edit deploy wordpress
+
+`K edit deploy wordpress`
 
 ```yaml
 initContainers:
@@ -523,6 +528,9 @@ Calculation Breakdown:
 3. Divide by 3 Pods:
 	- CPU per Pod:  {B-CPU} / 3 = {C-CPU} and round to off (conservative & stable)
 	- Memory per Pod:  {B-Mem} / 3 = {C-Mem} round it off
+4. Final Calculation:
+    - CPU = ((Allocatable CPU - (Allocatable CPU x 0.15))/3)
+    - Mem = ((Allocatable Mem - (Allocatable Mem x 0.15))/3)
 
 
 ```bash
