@@ -905,15 +905,55 @@ kubectl top pod --containers
 - Join node to cluster using `kubeadm`
 
 **Solution:**
+### Upgrade Node
 
-Use documentation to upgrade node version to 1.32
+controlplane:~$ k get nodes -o wide
+NAME           STATUS   ROLES           AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION     CONTAINER-RUNTIME
+controlplane   Ready    control-plane   25d   v1.34.1   172.30.1.2    <none>        Ubuntu 24.04.1 LTS   6.8.0-51-generic   containerd://1.7.27
+node01         Ready    <none>          25d   v1.33.2   172.30.2.2    <none>        Ubuntu 24.04.1 LTS   6.8.0-51-generic   containerd://1.7.27
+
+      
+ssh node01
+
+Update the directory to point to the desired version
+`vim /etc/apt/sources.list.d/kubernetes.list`
+
+Search for kubeadm upgrade
+```bash
+sudo apt-mark unhold kubeadm && \
+sudo apt-get update && sudo apt-get install -y kubeadm='1.34.1-1.1' && \
+sudo apt-mark hold kubeadm
+```
+
+`sudo kubeadm upgrade plan`
+
+`sudo kubeadm upgrade apply v1.34.1`
+
+
+Upgrade kubelet and kubectl
+```bash
+sudo apt-mark unhold kubelet kubectl && \
+sudo apt-get update && sudo apt-get install -y kubelet='1.34.x-*' kubectl='1.34.x-*' && \
+sudo apt-mark hold kubelet kubectl
+```
+
+Restart the kubelet:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart kubelet
+```
+
+
+### Join the node to the cluster:
+`ssh controlplane`
 
 ```bash
-# SSH into node and follow version upgrade docs
 kubeadm token create --print-join-command
 ```
 
----
+Copy the output and paste it after `ssh new-node`
+
+----
 
 ## 21. Use ServiceAccount to Access Secrets via API
 
