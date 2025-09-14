@@ -1041,8 +1041,10 @@ Create a new ServiceAccount processor in Namespace project-hamster. Create a Rol
 ```bash
 K create sa processor -n project-hamster
 ```
-
-Vim get `Role` from Doc
+Create a Role
+```bash
+kubectl create role processor --verb=create --resource=secret --resource=configmap -n project-hamster
+```
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -1050,26 +1052,33 @@ metadata:
   name: processor
   namespace: project-hamster
 rules:
-- apiGroups: [""]
-  resources: ["secrets", "configmaps"]
-  verbs: ["create"]
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  - configmaps
+  verbs:
+  - create
 ```
 
-Vim get `RoleBinding` from Doc
+Create a `RoleBinding`
+```bash
+kubectl create role processor --verb=create --resource=secret --resource=configmap -n project-hamster
+```
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
+kind: Role
 metadata:
   name: processor
   namespace: project-hamster
-subjects:
-- kind: ServiceAccount
-  name: processor
-  namespace: project-hamster
-roleRef:
-  kind: Role
-  name: processor
-  apiGroup: rbac.authorization.k8s.io
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  - configmaps
+  verbs:
+  - create
 ```
 
 ---
@@ -1102,46 +1111,60 @@ kubectl apply -f /opt/course/2/minio-tenant.yaml
 
 ## 24. DaemonSet with Resource Limits
 
-Use Namespace project-tiger for the following. Create a DaemonSet named ds-important with image httpd:2-aIpine and labels id=ds-important and uuid=18426aØbf59-4e1Ø-923f-cØeØ78e82462 . The Pods it creates should request 10 millicore cpu and 10 mebibyte memory. The Pods of that DaemonSet should run on all nodes, also controlplanes.
+Use Namespace project-tiger for the following. Create a DaemonSet named `ds-important` with image `httpd:2-alpine` and labels `id=ds-important` and `uuid=18426aØbf59-4e1Ø-923f-cØeØ78e82462`. The Pods it creates should request `10 millicore cpu` and `10 mebibyte memory`. The Pods of that DaemonSet should run on all nodes, also controlplanes.
 
 **Namespace:** `project-tiger`
 
 **Solution:**
 
+```bash
+k -n project-tiger create deployment --image=httpd:2.4-alpine ds-important --dry-run=client -o yaml > 11.yaml
+```
+
+Replace `Deployment` with `DaemonSet`
+
 ```yaml
 apiVersion: apps/v1
-kind: DaemonSet
+kind: DaemonSet                                     # change from Deployment to Daemonset
 metadata:
+  creationTimestamp: null
+  labels:                                           # add
+    id: ds-important                                # add
+    uuid: 18426a0b-5f59-4e10-923f-c0e078e82462      # add
   name: ds-important
-  namespace: project-tiger
-  labels:
-    id: ds-important
-    uuid: 18426a0bf59-4e10-923f-c0e078e82462
+  namespace: project-tiger                          # important
 spec:
+  #replicas: 1                                      # remove
   selector:
     matchLabels:
-      id: ds-important
+      id: ds-important                              # add
+      uuid: 18426a0b-5f59-4e10-923f-c0e078e82462    # add
+  #strategy: {}                                     # remove
   template:
     metadata:
+      creationTimestamp: null
       labels:
-        id: ds-important
+        id: ds-important                            # add
+        uuid: 18426a0b-5f59-4e10-923f-c0e078e82462  # add
     spec:
       containers:
-      - name: ds-important
-        image: httpd:2-alpine
+      - image: httpd:2-alpine
+        name: ds-important
         resources:
-          requests:
-            cpu: 10m
-            memory: 10Mi
-          limits:
-            memory: 10Mi
+          requests:                                 # add
+            cpu: 10m                                # add
+            memory: 10Mi                            # add
+      tolerations:                                  # add
+      - effect: NoSchedule                          # add
+        key: node-role.kubernetes.io/control-plane  # add
+#status: {}  
 ```
 
 ---
 
 ## 25. Deployment with Anti-Affinity and Multiple Containers
 
-Create a Deployment named deploy-important with 3 replicas. The Deployment and its Pods should have label id=very-important. First container named container1 with image nginx: I-alpine. Second container named container2 with image google/pause. There should only ever be one Pod of that Deployment running on one worker node, use topologyKey: kubernetes.io/hostname for this.
+Create a Deployment named `deploy-important` with 3 replicas. The Deployment and its Pods should have label `id=very-important`. First container named container1 with image nginx: I-alpine. Second container named container2 with image google/pause. There should only ever be one Pod of that Deployment running on one worker node, use topologyKey: kubernetes.io/hostname for this.
 
 **Namespace:** `project-tiger`
 
