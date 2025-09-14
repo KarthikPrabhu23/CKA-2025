@@ -814,15 +814,19 @@ Apply your changes for staging and prod so they're reflected in the cluster
 
 Remove the HPA from ConfigMap in 3 directory: Base, staging, prod
 1. Remove the ConfigMap horizontal-scaling-config
-	•	Locate and delete the ConfigMap manifest file (likely named horizontal-scaling-config.yaml) in /opt/course/5/api-gateway/base or wherever it is referenced.
-	•	Remove its reference from the kustomization.yaml under resources or configMapGenerator.
-2. Add HPA for the Deployment
+    •	Edit files `base/api-gateway.yaml`, `staging/api-gateway.yaml` and `prod/api-gateway.yaml` and remove the ConfigMap.
+	•	Locate and delete the ConfigMap manifest file (likely named horizontal-scaling-config.yaml) in `/opt/course/5/api-gateway/base` or wherever it is referenced.
+	•	Remove its reference from the `kustomization.yaml` under resources or configMapGenerator.
+3. Add HPA for the Deployment
 	Create a new HPA manifest in the base
 	Create a file /opt/course/5/api-gateway/base/hpa.yaml with the following content:
 
 **Base HPA Example:**
 
-```
+Add this in the `base/api-gateway.yaml` file
+
+```yaml
+# cka5774:/opt/course/5/api-gateway/base/api-gateway.yaml
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -835,42 +839,69 @@ spec:
   minReplicas: 2
   maxReplicas: 4
   metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 50
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: api-gateway
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      id: api-gateway
+  template:
+    metadata:
+      labels:
+        id: api-gateway
+    spec:
+      serviceAccountName: api-gateway
+      containers:
+        - image: httpd:2-alpine
+          name: httpd
 ```
+Notice that we don't specify a Namespace here as done also for the other resources. The Namespace will be set by staging and prod overlays automatically.
 
-**Prod Patch:**
 
-```
+In prod the HPA should have max replicas set to 6 so we add this to the prod patch:
+```yaml
+# cka5774:/opt/course/5/api-gateway/prod/api-gateway.yaml
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: api-gateway
 spec:
   maxReplicas: 6
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  labels:
+    env: prod
 ```
 
-4. Update kustomization.yaml Files
-In /opt/course/5/api-gateway/base/kustomization.yaml:
-Add the HPA resource:
 
-```yaml
-resources:
-  - deployment.yaml
-  # ... other resources
-  - hpa.yaml
-```  
-**Apply Commands:**
-
-```
+Apply the changes.
+```bash
 kubectl apply -k /opt/course/5/api-gateway/staging
 kubectl apply -k /opt/course/5/api-gateway/prod
 ```
 
+Notice that the ConfogMap still exists. Delete them manually
+```bash
+k delete cm horizontal-scaling-cm -n api-gateway
+```
 
 ## 19. Metrics Server Bash Scripts
 
@@ -958,7 +989,7 @@ Copy the output and paste it after `ssh new-node`
 
 ## 21. Use ServiceAccount to Access Secrets via API
 
-There is ServiceAccount secret-reader in Namespace project-swan . Create a Pod of image nginx:1-alpine named api-contact which uses this ServiceAccount. Exec into the Pod and use curl to manually query all Secrets from the Kubernetes Api. Write the result into file /opt/course/9/result.json .
+There is ServiceAccount `secret-reader` in Namespace `project-swan`. Create a Pod of image `nginx:1-alpine` named `api-contact` which uses this ServiceAccount. Exec into the Pod and use curl to manually query all Secrets from the Kubernetes Api. Write the result into file `/opt/course/9/result.json`.
 
 **Tasks:**
 - Use ServiceAccount `secret-reader` in `project-swan`
@@ -977,19 +1008,26 @@ kubectl apply -f q9-pod.yaml
 ```
 
 ```bash
-kubectl exec -it api-contact -n project-swan -- sh
+kubectl exec -it api-contact -n project-swan -it -- sh
+
+TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
 
 curl -k https://kubernetes.defautt/api/vl/secrets -H "Authorization: Bearer ${TOKEN}"
-
-TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token) 
 
 curt -k https://kubernetes.defautt/api/vl/secrets -H "Authorization: Bearer ${TOKEN}" > results.json
 
 exit
 
-kubectl exec -it api-contact  –n project-swan – cat results.json > solution.json
+kubectl exec -it api-contact –n project-swan -- cat results.json > solution.json
 ```
 
+Connect via HTTPS with correct CA
+To connect without curl -k we can specify the CertificateAuthority (CA):
+
+```bash
+➜ / # CACERT=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+➜ / # curl --cacert ${CACERT} https://kubernetes.default/api/v1/secrets -H "Authorization: Bearer ${TOKEN}"
+```
 ---
 
 ## 22. Create Role and RoleBinding for SA
