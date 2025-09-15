@@ -1327,7 +1327,6 @@ Or our topologySpreadConstraints reason didn't match pod topology spread constra
 
 Warning  FailedScheduling  20s (x2 over 22s)  default-scheduler  0/3 nodes are available: 1 node(s) had untolerated taint {node-role.kubernetes.io/control-plane: }, 2 node(s) didn't match pod topology spread constraints. preemption: 0/3 nodes are available: 1 Preemption is not helpful for scheduling, 2 No preemption victims found for incoming pod.
  ```
-
  
 ---
 
@@ -1343,8 +1342,15 @@ Check how long the kube-apiserver server certificate is valid using openssl or c
 openssl x509 -noout -text -in /etc/kubernetes/pki/apiserver.crt 
 
 Check for “Validity: Not after” field
+```
 
-kubeadm certs renew apiserver
+```bash
+openssl x509 -noout -text -in /etc/kubernetes/pki/apiserver.crt | grep Validity -A2
+>>>     Validity
+            Not
+
+ Before: Oct 29 14:14:27 2024 GMT
+            Not After : Oct 29 14:19:27 2025 GMT
 ```
 
 Store expiration in:
@@ -1353,10 +1359,10 @@ Store expiration in:
 /opt/course/14/expiration
 ```
 
-Store renew command in:
+Store renew command in: `/opt/course/14/kubeadm-renew-certs.sh`
 
 ```bash
-/opt/course/14/kubeadm-renew-certs.sh
+kubeadm certs renew apiserver
 ```
 
 ---
