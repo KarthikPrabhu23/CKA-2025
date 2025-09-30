@@ -1433,21 +1433,21 @@ Check for “Validity: Not after” field
 ```bash
 openssl x509 -noout -text -in /etc/kubernetes/pki/apiserver.crt | grep Validity -A2
 >>>     Validity
-            Not
-
- Before: Oct 29 14:14:27 2024 GMT
+            Not Before: Oct 29 14:14:27 2024 GMT
             Not After : Oct 29 14:19:27 2025 GMT
 ```
 
 Store expiration in:
 
 ```bash
-/opt/course/14/expiration
+# /opt/course/14/expiration
+Oct 29 14:19:27 2025 GMT
 ```
 
 Store renew command in: `/opt/course/14/kubeadm-renew-certs.sh`
 
 ```bash
+# /opt/course/14/kubeadm-renew-certs.sh
 kubeadm certs renew apiserver
 ```
 
@@ -1457,10 +1457,12 @@ kubeadm certs renew apiserver
 
 The CoreDNS configuration in the cluster needs to be updated,
 - Make a backup of the existing configuration Yaml and store it at `/opt/course/16/coredns_backup.yml`. You should be able to fast recover from the backup
-- Update the CoreDNS configuration in the cluster so that DNS resolution for SERVICE.NAMESPACE. custom-domain will work exactly like and in addition to SERVICE. NAMESPACE.cluster.local
+- Update the CoreDNS configuration in the cluster so that DNS resolution for `SERVICE.NAMESPACE.custom-domain` will work exactly like and in addition to `SERVICE.NAMESPACE.cluster.local`
 Test your configuration for example from a Pod with `busybox:1-image`. These commands should result in an address:
+```bash
 nslookup kubernetes.default.svc.cluster.local
 nslookup kubernetes.default.svc.custom-domain
+```
 
 **Solution:**
 
@@ -1470,7 +1472,7 @@ kubectl get cm coredns -n kube-system -o yaml > /opt/course/16/coredns_backup.ya
 kubectl edit cm coredns -n kube-system
 ```
 
-Update `Corefile`:
+Update `data.Corefile`:
 add `custom-domain`
 ```bash
 kubernetes custom-domain cluster.local in-addr.arpa ip6.arpa {
@@ -1486,23 +1488,39 @@ Restart:
 kubectl rollout restart deployment coredns -n kube-system
 ```
 
+Verify:
+- Run both the `nslookup` commands from the question.
+
 ---
 
 ## 28. Crictl Container Info and Logs
 
-Solve this question on: Namespace project-tiger create a Pod named tigers-reunite of image httpd:2-alpine with labels pod=container and container=pod. Find out on which node the Pod is scheduled. SSH into that node and find the containerd container belonging to that Pod.
+Solve this question on: Namespace project-tiger create a Pod named `tigers-reunite` of image `httpd:2-alpine` with labels `pod=container` and `container=pod`. Find out on which node the Pod is scheduled. SSH into that node and find the containerd container belonging to that Pod.
 
 **Tasks:**
-- Find container ID and runtimeType
-- Store to `/opt/course/17/pod-container.txt`
-- Save logs to `/opt/course/17/pod-container.log`
+- Find `container ID` and `runtimeType`
+- Write the ID of the container and the `info.runtimeType` into `/opt/course/17/pod-container.txt`
+- Write the logs of the container into `/opt/course/17/pod-container.log`
+
+ℹ️ You can connect to a worker node using `ssh cka2556-node1` or `ssh cka2556-node2` from `cka2556`
+
 
 **Solution:**
 
 ```bash
+
+ssh cka2556
 kubectl run tigers-reunite --image=httpd:2-alpine -n project-tiger --labels="pod=container,container=pod"
 
+```
+Find the node where `tigers-reunite` is scheduled on
+`k get pod -o wide -n project-tiger`
+
+```bash
 # Find node it's running on, SSH there:
+ssh <node-name>
+
+sudo -i
 
 crictl ps | grep tigers-reunite
 
@@ -1513,19 +1531,17 @@ sudo -i
 
 crictl logs <containerID> > /opt/course/17/pod-container.log
 ```
-Copy the crictl logs obtained into the solution file
-vim inside file: a151ca5ed8861 io.containerd.runc.v2
-
 
 ---
 
 ## 29. ETCD Info Extraction
 
-The cluster admin asked you to find out the following formation about etcd running on cka9412 :
-• Server private key location
-• Server certificate expiration date
-• Is client certificate authentication enabled
-Write these information into /opt/course/pl/etcd-info. Txt
+The cluster admin asked you to find out the following formation about etcd running on `cka9412` :
+- Server private key location
+- Server certificate expiration date
+- Is client certificate authentication enabled
+  
+Write these information into `/opt/course/pl/etcd-info.txt`
 
 **Tasks:**
 - Server private key location
@@ -1535,18 +1551,23 @@ Write these information into /opt/course/pl/etcd-info. Txt
 **Solution:**
 
 ```bash
-Look into /etc/kubernetes/manifests/etcd.yaml for “—key-file” “—cert-file” 
+sudo - i
 
+Look into /etc/kubernetes/manifests/etcd.yaml for “--key-file” “--cert-file” 
+--client-cert-auth=true
 
 cd /etc/kubernetes/manifests
+
 # Certificate check:
-openssl x509 -noout -text -in /etc/kubernetes/pki/etcd/server.crt 
+openssl x509 -noout -text -in /etc/kubernetes/pki/etcd/server.crt | grep Validity -A2
+
 # Look for client-cert-auth: true in etcd manifest
 ```
 Copy the “Validity – Not after” field into Solution file
 Client-cert YES TRUE
 
 ```bash
+# /opt/course/pl/etcd-info.txt
 Server private key location: /etc/kubernetes/pki/etcd/server.key
 Server certificate expiration date: Feb 20 18:24:56 2026 GMT
 Is client certificate authentication enabled: yes
