@@ -239,28 +239,79 @@ spec:
 ```
 
 -------------------------------------
-The team from Project r500 wants to replace their Ingress (Networking.k8s.io) with a Gateway Api gateway.networking.k8s.io) solution. The old Ingress is available at `/opt/course/13/ingress.yaml`. Perform the following in Namespace `project-r500` and for the already existing Gateway:
-Create a new HTTPRoute named traffic-director which replicates the routes from the old Ingress
-Extend the new HTTPRoute with path /auto which redirects to mobile if the User-Agent is exactly mobile and to desktop otherwise
+The team from Project r500 wants to replace their Ingress (Networking.k8s.io) with a Gateway Api gateway.networking.k8s.io) solution. 
+
+The old Ingress is available at `/opt/course/13/ingress.yaml`. Perform the following in Namespace `project-r500` and for the already existing Gateway:
+- Create a new HTTPRoute named `traffic-director` which replicates the routes from the old Ingress.
+- Extend the new HTTPRoute with path `/auto` which redirects to mobile if the User-Agent is exactly `mobile` and to desktop otherwise
 
 **Tasks:**
 - Replace Ingress with Gateway + HTTPRoute in `project-r500`
 
 **Example Route Snippet:**
 
+vim `httproute.yaml`
+
 ```yaml
-matches:
-- path:
-    type: PathPrefix
-    value: /
-  header:
-    - type: Exact
-      name: User-Agent
-      value: Mobile
-backendRefs:
-- name: my-service
-  port: 80
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: traffic-director
+  namespace: project-r500
+spec:
+  parentRefs:
+    - name: main   # use the name of the existing Gateway
+  hostnames:
+    - "r500.gateway"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /desktop
+      backendRefs:
+        - name: web-desktop
+          port: 80
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /mobile
+      backendRefs:
+        - name: web-mobile
+          port: 80
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /auto
+          headers:
+          - type: Exact
+            name: user-agent
+            value: mobile
+      backendRefs:
+        - name: web-mobile
+          port: 80
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /auto
+      backendRefs:
+        - name: web-desktop
+          port: 80
 ```
+
+Our solution should result in this:
+
+```bash
+➜ candidate@cka7968:~$ curl -H "User-Agent: mobile" r500.gateway:30080/auto
+Web Mobile App
+
+➜ candidate@cka7968:~$ curl -H "User-Agent: something" r500.gateway:30080/auto
+Web Desktop App
+
+➜ candidate@cka7968:~$ curl r500.gateway:30080/auto
+Web Desktop App
+```
+
+-----
 
 ## 6. Add Sidecar and Shared Volume
 
@@ -799,7 +850,7 @@ The file will contain the Pod name
 
 ## 18. Kustomize HPA Migration
 
-Previously the application api-gateway used some external autoscaler which should now be replaced with a HorizontalPodAutoscaler (HPA). The application has been deployed to Namespaces api-gateway-staging and api-gateway-prod like this:
+Previously the application api-gateway used some external autoscaler which should now be replaced with a HorizontalPodAutoscaler (HPA). The application has been deployed to Namespaces `api-gateway-staging` and `api-gateway-prod` like this:
 ```bash
 kubectl kustomize /opt/course/5/api—gateway/staging
 kubectl kustomize /opt/course/5/api—gateway/prod
@@ -913,8 +964,8 @@ k delete cm horizontal-scaling-cm -n api-gateway
 ## 19. Metrics Server Bash Scripts
 
 The metrics-server has been installed in the cluster. Write two bash scripts which use kubectl :
-- Script /opt/course/7/node.sh should show resource usage of Nodes
-- Script /opt/course/7/pod.sh should show resource usage of Pods and their containers
+- Script `/opt/course/7/node.sh` should show resource usage of Nodes
+- Script `/opt/course/7/pod.sh` should show resource usage of Pods and their containers
 
 **Tasks:**
 - Show node resource usage
@@ -1021,25 +1072,28 @@ TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
 
 curl -k https://kubernetes.defautt/api/vl/secrets -H "Authorization: Bearer ${TOKEN}"
 
-curt -k https://kubernetes.defautt/api/vl/secrets -H "Authorization: Bearer ${TOKEN}" > results.json
+curt -k https://kubernetes.defautt/api/vl/secrets -H "Authorization: Bearer ${TOKEN}" > result.json
 
 exit
 
-kubectl exec -it api-contact –n project-swan -- cat results.json > solution.json
+# Now in control-plane node
+
+kubectl exec -it api-contact –n project-swan -- cat result.json > /opt/course/9/result.json
 ```
 
 Connect via HTTPS with correct CA
 To connect without curl -k we can specify the CertificateAuthority (CA):
 
 ```bash
-➜ / # CACERT=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-➜ / # curl --cacert ${CACERT} https://kubernetes.default/api/v1/secrets -H "Authorization: Bearer ${TOKEN}"
+CACERT=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+
+curl --cacert ${CACERT} https://kubernetes.default/api/v1/secrets -H "Authorization: Bearer ${TOKEN}"
 ```
 ---
 
 ## 22. Create Role and RoleBinding for SA
 
-Create a new ServiceAccount processor in Namespace project-hamster. Create a Role and RoleBinding, both named processor as well. These should allow the new SA to only create Secrets and ConfigMaps in that Namespace.
+Create a new ServiceAccount `processor` in Namespace `project-hamster`. Create a Role and RoleBinding, both named processor as well. These should allow the new SA to only create Secrets and ConfigMaps in that Namespace.
 
 **Namespace:** `project-hamster`
 
@@ -1052,6 +1106,8 @@ Create a Role
 ```bash
 kubectl create role processor --verb=create --resource=secret --resource=configmap -n project-hamster
 ```
+
+It will create:
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -1072,6 +1128,7 @@ Create a `RoleBinding`
 ```bash
 kubectl create role processor --verb=create --resource=secret --resource=configmap -n project-hamster
 ```
+It will create:
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -1086,6 +1143,24 @@ rules:
   - configmaps
   verbs:
   - create
+```
+
+Verify the work:
+```bash
+➜ candidate@cka3962:~$ k -n project-hamster auth can-i create secret --as system:serviceaccount:project-hamster:processor
+yes
+
+➜ candidate@cka3962:~$ k -n project-hamster auth can-i create configmap --as system:serviceaccount:project-hamster:processor
+yes
+
+➜ candidate@cka3962:~$ k -n project-hamster auth can-i create pod --as system:serviceaccount:project-hamster:processor
+no
+
+➜ candidate@cka3962:~$ k -n project-hamster auth can-i delete secret --as system:serviceaccount:project-hamster:processor
+no
+
+➜ candidate@cka3962:~$ k -n project-hamster auth can-i get configmap --as system:serviceaccount:project-hamster:processor
+no
 ```
 
 ---
@@ -1132,7 +1207,7 @@ Use Namespace project-tiger for the following. Create a DaemonSet named `ds-impo
 **Solution:**
 
 ```bash
-k -n project-tiger create deployment --image=httpd:2.4-alpine ds-important --dry-run=client -o yaml > 11.yaml
+k create deployment ds-important --image=httpd:2.4-alpine -n project-tiger --dry-run=client -o yaml > 11.yaml
 ```
 
 Replace `Deployment` with `DaemonSet`
@@ -1173,6 +1248,8 @@ spec:
         key: node-role.kubernetes.io/control-plane  # add
 #status: {}  
 ```
+
+It was requested that the DaemonSet runs on all nodes, so we need to specify the toleration for this.
 
 ---
 
