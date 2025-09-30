@@ -764,23 +764,25 @@ You're asked to extract the following information out of kubeconfig file `/opt/c
 - Extract context names, current context, and client-key (base64 decoded)
 
 **Solution:**
-
-```bash
- k config view --kubeconfig /opt/course/1/kubeconfig --raw -o jsonpath="{.users[0].user.client-certificate-data}" | base64 -d > /opt/course/1/cert
-```
---OR-- 
-
+### Extract contexts:
 ```bash
 kubectl config get-contexts --kubeconfig /opt/course/l/kubeconfig -o name > /opt/course/l/contexts
-
+```
+### Extract current context:
+```bash
 kubectl config current-context --kubeconfig /opt/course/l/kubeconfig > /opt/course/l/current-context
 ```
 
+### Extract client-certificate-data:
 ```bash
-# Extract client-certificate-data:
+ k config view --kubeconfig /opt/course/1/kubeconfig --raw -o jsonpath="{.users[0].user.client-certificate-data}" | base64 -d > /opt/course/1/cert
+```
+-- OR --
+```bash
+
 cat /opt/course/l/kubeconfig
 
-Copy the client-certificate-data field 
+Copy the `client-certificate-data` field 
 
 # Then decode:
 echo <client-certificate-data> | base64 -d > /opt/course/l/cert
@@ -798,16 +800,16 @@ The file will contain the Pod name
 ## 18. Kustomize HPA Migration
 
 Previously the application api-gateway used some external autoscaler which should now be replaced with a HorizontalPodAutoscaler (HPA). The application has been deployed to Namespaces api-gateway-staging and api-gateway-prod like this:
-```
+```bash
 kubectl kustomize /opt/course/5/api—gateway/staging
 kubectl kustomize /opt/course/5/api—gateway/prod
 ```
 
-sign the Kustomize config at /opt/course/5/api-gateway do the following:
-Remove the ConfigMap horizontal—scaling—config completely
-Add HPA named api-gateway for the Deployment api-gateway with min 2 and max 4 replicas. It should scale at 5096 average CPU utilisation
-In prod the HPA should have max 6 replicas
-Apply your changes for staging and prod so they're reflected in the cluster
+Using the Kustomize config at `/opt/course/5/api-gateway` do the following:
+- Remove the ConfigMap `horizontal—scaling—config` completely.
+- Add HPA named `api-gateway` for the Deployment `api-gateway` with min 2 and max 4 replicas. It should scale at 50% average CPU utilisation
+- In prod the HPA should have max 6 replicas
+- Apply your changes for staging and prod so they're reflected in the cluster
 
 **Tasks:**
 
@@ -1091,10 +1093,10 @@ rules:
 ## 23. MinIO Operator Install with Tenant CRD
 
 Install the MinlO Operator using Helm in Namespace minio . Then configure and create the Tenant CRD:
-- Create Namespace minio
-- Install Helm chart minio/operator into the new Namespace. The Helm Release should be called minio—operator
-- Update the Tenant resource in /opt/course/2/minio-tenant.yaml to include enableSFTP: true under features
-- Create the Tenant resource from /opt/course/2/minio-tenant. Yaml It is not required for MinlO to run properly.
+- Create Namespace `minio`
+- Install Helm chart `minio/operator` into the new Namespace. The Helm Release should be called `minio—operator`
+- Update the Tenant resource in `/opt/course/2/minio-tenant.yaml` to include `enableSFTP: true` under features
+- Create the Tenant resource from `/opt/course/2/minio-tenant`. Yaml It is not required for MinlO to run properly.
 Installing the Helm Chart and the Tenant resource as requested is enough
 
 **Namespace:** `minio`
@@ -1102,13 +1104,20 @@ Installing the Helm Chart and the Tenant resource as requested is enough
 **Solution:**
 
 ```bash
+
+k create ns minio
+
 helm install minio-operator minio/operator -n minio
 
+```
+
+```bash
 vim /opt/course/2/minio-tenant.yaml
 
-# Add under spec.features
+# Add under `spec.features`
 enableSFTP: true 
-
+```
+```bash
 kubectl apply -f /opt/course/2/minio-tenant.yaml
 ```
 
@@ -1542,3 +1551,14 @@ Search for /resources
 Reduce CPU request to 100m
 
 ---
+
+----
+
+## 32. Scaledown Stateful sets
+
+There are two Pods named `o3db-*` in Namespace `project-h800`. The Project H800 management asked you to scale these down to one replica to save resources.
+
+```bash
+➜ candidate@cka3962:~ k scale sts o3db --replicas 1 -n project-h800 
+statefulset.apps/o3db scaled
+```
