@@ -821,12 +821,12 @@ Using the Kustomize config at `/opt/course/5/api-gateway` do the following:
 
 Remove the HPA from ConfigMap in 3 directory: Base, staging, prod
 1. Remove the ConfigMap horizontal-scaling-config
-    •	Edit files `base/api-gateway.yaml`, `staging/api-gateway.yaml` and `prod/api-gateway.yaml` and remove the ConfigMap.
-	•	Locate and delete the ConfigMap manifest file (likely named horizontal-scaling-config.yaml) in `/opt/course/5/api-gateway/base` or wherever it is referenced.
-	•	Remove its reference from the `kustomization.yaml` under resources or configMapGenerator.
-3. Add HPA for the Deployment
-	Create a new HPA manifest in the base
-	Create a file /opt/course/5/api-gateway/base/hpa.yaml with the following content:
+   - Edit files `base/api-gateway.yaml`, `staging/api-gateway.yaml` and `prod/api-gateway.yaml` and remove the ConfigMap.
+   - Locate and delete the ConfigMap manifest file (likely named `horizontal-scaling-config.yaml`) in `/opt/course/5/api-gateway/base` or wherever it is referenced.
+   - Remove its reference from the `kustomization.yaml` under resources or configMapGenerator.
+2. Add HPA for the Deployment
+   - Create a new HPA manifest in the base
+   - Create a file `/opt/course/5/api-gateway/base/hpa.yaml` with the following content:
 
 **Base HPA Example:**
 
