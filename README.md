@@ -1660,3 +1660,213 @@ There are two Pods named `o3db-*` in Namespace `project-h800`. The Project H800 
 ➜ candidate@cka3962:~ k scale sts o3db --replicas 1 -n project-h800 
 statefulset.apps/o3db scaled
 ```
+
+----
+
+## 33. Kube Proxy IP tables
+
+You're asked to confirm that kube-proxy is running correctly. For this perform the following in Namespace `project-hamster`:
+- Create Pod `p2-pod` with image `nginx:1-alpine`
+- Create Service `p2-service` which exposes the Pod internally in the cluster on port `3000->80`
+
+Write the iptables rules of node cka3962 belonging the created Service `p2-service` into file `/opt/course/p2/iptables.txt`
+
+Delete the Service and confirm that the iptables rules are gone again
+
+**Answer:**
+
+Step 1: Create the Pod
+First we create the Pod:
+
+```bash
+➜ candidate@cka3962:~$ k -n project-hamster run p2-pod --image=nginx:1-alpine
+pod/p2-pod created
+```
+Step 2: Create the Service
+```bash
+➜ candidate@cka3962:~$ k -n project-hamster expose pod p2-pod --name p2-service --port 3000 --target-port 80
+
+➜ candidate@cka3962:~$ k -n project-hamster get pod,svc,ep
+NAME                 READY   STATUS    RESTARTS   AGE
+pod/p2-pod           1/1     Running   0          2m31s
+
+NAME                 TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
+service/p2-service   ClusterIP   10.105.128.247   <none>        3000/TCP   1s
+
+NAME                   ENDPOINTS       AGE
+endpoints/p2-service   10.44.0.31:80   1s
+```
+We should see that Pods and Services are connected, hence the Service should have Endpoints.
+
+ 
+
+(Optional) Confirm kube-proxy is running and is using iptables
+The idea here is to find the kube-proxy container and check its logs:
+```bash
+➜ candidate@cka3962:~$ sudo -i
+
+➜ root@cka3962$ crictl ps | grep kube-proxy
+67cccaf8310a1   505d571f5fd56   9 days ago      Running    kube-proxy ...
+
+➜ root@cka3962~# crictl logs 67cccaf8310a1
+I1029 14:10:23.984360       1 server_linux.go:66] "Using iptables proxy"
+```
+This could be repeated on each controlplane and worker node where the result should be the same.
+
+ 
+
+Step 3: Check kube-proxy is creating iptables rules
+Now we check the iptables rules on every node first manually:
+```bash
+➜ root@cka3962:~# iptables-save | grep p2-service
+-A KUBE-SEP-55IRFJIRWHLCQ6QX -s 10.44.0.31/32 -m comment --comment "project-hamster/p2-service" -j KUBE-MARK-MASQ
+-A KUBE-SEP-55IRFJIRWHLCQ6QX -p tcp -m comment --comment "project-hamster/p2-service" -m tcp -j DNAT --to-destination 10.44.0.31:80
+-A KUBE-SERVICES -d 10.105.128.247/32 -p tcp -m comment --comment "project-hamster/p2-service cluster IP" -m tcp --dport 3000 -j KUBE-SVC-U5ZRKF27Y7YDAZTN
+-A KUBE-SVC-U5ZRKF27Y7YDAZTN ! -s 10.244.0.0/16 -d 10.105.128.247/32 -p tcp -m comment --comment "project-hamster/p2-service cluster IP" -m tcp --dport 3000 -j KUBE-MARK-MASQ
+-A KUBE-SVC-U5ZRKF27Y7YDAZTN -m comment --comment "project-hamster/p2-service -> 10.44.0.31:80" -j KUBE-SEP-55IRFJIRWHLCQ6QX
+# Warning: iptables-legacy tables present, use iptables-legacy-save to see them
+Great. Now let's write these logs into the requested file:
+
+➜ root@cka3962:~# iptables-save | grep p2-service > /opt/course/p2/iptables.txt
+ ```
+
+Delete the Service and confirm iptables rules are gone
+Delete the Service and confirm the iptables rules are gone::
+
+```bash
+➜ root@cka3962:~# k -n project-hamster delete svc p2-service
+service "p2-service" deleted
+
+➜ root@cka3962:~# iptables-save | grep p2-service
+
+➜ root@cka3962:~#
+Kubernetes Services are implemented using iptables rules (with default config) on all nodes. Every time a Service has been altered, created, deleted or Endpoints of a Service have changed, the kube-apiserver contacts every node's kube-proxy to update the iptables rules according to the current state.
+
+ ```
+----- 
+
+## 34. Change Service CIDR
+ 
+- Create a Pod named `check-ip` in Namespace `default` using image `httpd:2-alpine`
+- Expose it on port `80` as a ClusterIP Service named `check-ip-service`. Remember to output the IP of that Service
+- Change the Service CIDR to `11.96.0.0/12` for the cluster
+- Create a second Service named `check-ip-service2` pointing to the same Pod
+
+
+ℹ️ The second Service should get an IP address from the new CIDR range
+
+ **Answer:**
+Let's create the Pod and expose it:
+```bash
+➜ candidate@cka9412:~$ k run check-ip --image=httpd:2-alpine
+pod/check-ip created
+
+➜ candidate@cka9412:~$ k expose pod check-ip --name check-ip-service --port 80
+And check the Service IP:
+
+➜ candidate@cka9412:~$ k get svc
+NAME               TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+check-ip-service   ClusterIP   10.109.84.110   <none>        80/TCP    13s
+kubernetes         ClusterIP   10.96.0.1       <none>        443/TCP   9d
+Now we change the Service CIDR in the kube-apiserver manifest:
+
+➜ candidate@cka9412:~$ sudo -i
+
+➜ root@cka9412:~# vim /etc/kubernetes/manifests/kube-apiserver.yaml
+# cka9412:/etc/kubernetes/manifests/kube-apiserver.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    component: kube-apiserver
+    tier: control-plane
+  name: kube-apiserver
+  namespace: kube-system
+spec:
+  containers:
+  - command:
+    - kube-apiserver
+    - --advertise-address=192.168.100.21
+...
+    - --service-account-key-file=/etc/kubernetes/pki/sa.pub
+    - --service-cluster-ip-range=11.96.0.0/12             # change
+    - --tls-cert-file=/etc/kubernetes/pki/apiserver.crt
+    - --tls-private-key-file=/etc/kubernetes/pki/apiserver.key
+...
+```
+
+We wait for the kube-apiserver to be restarted, which can take a minute:
+```bash
+➜ root@cka9412:~# watch crictl ps
+
+➜ root@cka9412:~# kubectl -n kube-system get pod | grep api
+kube-apiserver-cka9412            1/1     Running   0             20s
+```
+Now we do the same for the controller manager:
+```bash
+➜ root@cka9412:~# vim /etc/kubernetes/manifests/kube-controller-manager.yaml
+# /etc/kubernetes/manifests/kube-controller-manager.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    component: kube-controller-manager
+    tier: control-plane
+  name: kube-controller-manager
+  namespace: kube-system
+spec:
+  containers:
+  - command:
+    - kube-controller-manager
+    - --allocate-node-cidrs=true
+    - --authentication-kubeconfig=/etc/kubernetes/controller-manager.conf
+    - --authorization-kubeconfig=/etc/kubernetes/controller-manager.conf
+    - --bind-address=127.0.0.1
+    - --client-ca-file=/etc/kubernetes/pki/ca.crt
+    - --cluster-cidr=10.244.0.0/16
+    - --cluster-name=kubernetes
+    - --cluster-signing-cert-file=/etc/kubernetes/pki/ca.crt
+    - --cluster-signing-key-file=/etc/kubernetes/pki/ca.key
+    - --controllers=*,bootstrapsigner,tokencleaner
+    - --kubeconfig=/etc/kubernetes/controller-manager.conf
+    - --leader-elect=true
+    - --node-cidr-mask-size=24
+    - --requestheader-client-ca-file=/etc/kubernetes/pki/front-proxy-ca.crt
+    - --root-ca-file=/etc/kubernetes/pki/ca.crt
+    - --service-account-private-key-file=/etc/kubernetes/pki/sa.key
+    - --service-cluster-ip-range=11.96.0.0/12         # change
+    - --use-service-account-credentials=true
+```
+We wait for the kube-controller-manager to be restarted, which can take a minute:
+```bash
+➜ root@cka9412:~# watch crictl ps
+
+➜ root@cka9412:~# kubectl -n kube-system get pod | grep controller
+kube-controller-manager-cka9412   1/1     Running   0               39s
+```
+Checking our Service again:
+```bash
+➜ root@cka9412:~$ k get svc
+NAME               TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+check-ip-service   ClusterIP   10.109.84.110   <none>        80/TCP    5m3s
+kubernetes         ClusterIP   10.96.0.1       <none>        443/TCP   9d
+Nothing changed so far. Now we create the second Service:
+
+➜ root@cka9412:~$ k expose pod check-ip --name check-ip-service2 --port 80
+And check again:
+
+➜ root@cka9412:~$ k get svc
+NAME                        TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+service/check-ip-service    ClusterIP   10.109.84.110   <none>        80/TCP    5m55s
+service/check-ip-service2   ClusterIP   11.105.52.114   <none>        80/TCP    29s
+service/kubernetes          ClusterIP   10.96.0.1       <none>        443/TCP   9d
+
+NAME                          ENDPOINTS             AGE
+endpoints/check-ip-service    10.44.0.3:80          5m55s
+endpoints/check-ip-service2   10.44.0.3:80          29s
+endpoints/kubernetes          192.168.100.21:6443   9d
+```
+There we go, the new Service got an IP of the updated range assigned. We also see that both Services have our Pod as endpoint.
+
