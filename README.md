@@ -1883,22 +1883,20 @@ The Deployment controller in Namespace `lima-control` communicates with various 
 Update the ConfigMap used by the Deployment with the correct FQDN values for:
 
 - DNS_1: Service kubernetes in Namespace default
-DNS_2: Headless Service department in Namespace lima-workload
-DNS_3: Pod section100 in Namespace lima-workload. It should work even if the Pod IP changes
-DNS_4: A Pod with IP 1.2.3.4 in Namespace kube-system
+- DNS_2: Headless Service department in Namespace lima-workload
+- DNS_3: Pod section100 in Namespace lima-workload. It should work even if the Pod IP changes
+- DNS_4: A Pod with IP 1.2.3.4 in Namespace kube-system
 
 Ensure the Deployment works with the updated values.
 
 ℹ️ You can use nslookup inside a Pod of the controller Deployment
 
 Answer:
-For this question we need to understand how cluster internal DNS works in Kubernetes. The most common use is SERVICE.NAMESPACE.svc.cluster.local which will resolve to the IP address of the Kubernetes Service. Note that we're asked to specify the FQDNs here so short values like SERVICE.NAMESPACE are not possible even if they would work.
+For this question we need to understand how cluster internal DNS works in Kubernetes. The most common use is `SERVICE.NAMESPACE.svc.cluster.local` which will resolve to the IP address of the Kubernetes Service. Note that we're asked to specify the FQDNs here so short values like `SERVICE.NAMESPACE` are not possible even if they would work.
 Let's exec into the Pod for testing:
 
-➜ ssh cka6016
- 
 
-Solution
+**Solution**
 We should update the ConfigMap:
 ```bash
 ➜ candidate@cka6016:~$ k -n lima-control edit cm control-config
@@ -1920,14 +1918,12 @@ Restart the Deployment:
 deployment.apps/controller restarted
 ```
  
+--- 
 
-Question 2 | Create a Static Pod and Service
- 
+## Question 2 | Create a Static Pod and Service
 
-Solve this question on: ssh cka2560
-
-Create a Static Pod named `my-static-pod` in Namespace `default` on the controlplane node. It should be of image `nginx:1-alpine` and have resource requests for `10m` CPU and `20Mi` memory.
-Create a NodePort Service named `static-pod-service` which exposes that static Pod on port `80`.
+- Create a Static Pod named `my-static-pod` in Namespace `default` on the controlplane node. It should be of image `nginx:1-alpine` and have resource requests for `10m` CPU and `20Mi` memory.
+- Create a NodePort Service named `static-pod-service` which exposes that static Pod on port `80`.
 
 ℹ️ For verification check if the new Service has one Endpoint. It should also be possible to access the Pod via the cka2560 internal IP address, like using curl 192.168.100.31:NODE_PORT
 
@@ -2037,15 +2033,15 @@ Node `cka5248-node1` has been added to the cluster using kubeadm and TLS bootstr
 
 Find the `Issuer` and `Extended Key Usage` values on `cka5248-node1` for:
 
-Kubelet Client Certificate, the one used for outgoing connections to the `kube-apiserver`
-Kubelet Server Certificate, the one used for incoming connections from the `kube-apiserver`
+- Kubelet Client Certificate, the one used for outgoing connections to the `kube-apiserver`
+- Kubelet Server Certificate, the one used for incoming connections from the `kube-apiserver`
 
 Write the information into file `/opt/course/3/certificate-info.txt`.
 
-ℹ️ You can connect to the worker node using ssh cka5248-node1 from cka5248
+ℹ️ You can connect to the worker node using `ssh cka5248-node1` from `cka5248`
  
 
-Answer:
+**Answer**:
 First we check the kubelet client certificate:
 ```bash
 ➜ ssh cka5248
@@ -2097,20 +2093,20 @@ Solve this question on: ssh cka3200
 
 Do the following in Namespace `default`:
 
-Create a Pod named `ready-if-service-ready` of image `nginx:1-alpine`
-Configure a LivenessProbe which simply executes command `true`
-Configure a ReadinessProbe which does check if the url `http://service-am-i-ready:80` is reachable, you can use `wget -T2 -O- http://service-am-i-ready:80` for this
+- Create a Pod named `ready-if-service-ready` of image `nginx:1-alpine`
+- Configure a LivenessProbe which simply executes command `true`
+- Configure a ReadinessProbe which does check if the url `http://service-am-i-ready:80` is reachable, you can use `wget -T2 -O- http://service-am-i-ready:80` for this
 
 Start the Pod and confirm it isn't ready because of the ReadinessProbe.
 
 Then:
-Create a second Pod named `am-i-ready` of image `nginx:1-alpine` with label `id: cross-server-ready`
-
-The already existing Service `service-am-i-ready` should now have that second Pod as endpoint
+- Create a second Pod named `am-i-ready` of image `nginx:1-alpine` with label `id: cross-server-ready`.
+- The already existing Service `service-am-i-ready` should now have that second Pod as endpoint
 
 Check that the first Pod should be in ready state.
 
-Answer:
+**Answer**:
+
 It's a bit of an anti-pattern for one Pod to check another Pod for being ready using probes, hence the normally available `readinessProbe.httpGet` doesn't work for absolute remote urls. Still the workaround requested in this task should show how probes and Pod<->Service communication works.
 
 First we create the first Pod:
@@ -2207,18 +2203,18 @@ Solve this question on: ssh cka8448
 
 Create two bash script files which use kubectl sorting to:
 - Write a command into `/opt/course/5/find_pods.sh` which lists all Pods in all Namespaces sorted by their AGE `metadata.creationTimestamp`
-Write a command into `/opt/course/5/find_pods_uid.sh` which lists all Pods in all Namespaces sorted by field `metadata.uid`
+- Write a command into `/opt/course/5/find_pods_uid.sh` which lists all Pods in all Namespaces sorted by field `metadata.uid`
 
  
-Answer:
+**Answer**:
 
-Step 1
+### Step 1
 ```bash
 vim /opt/course/5/find_pods.sh
 kubectl get pod -A --sort-by=.metadata.creationTimestamp
 ```
 
-Step 2
+### Step 2
 ```bash
 vim /opt/course/5/find_pods_uid.sh
 kubectl get pod -A --sort-by=.metadata.uid
@@ -2227,8 +2223,6 @@ kubectl get pod -A --sort-by=.metadata.uid
  ---
  
 ## Question 6 | Fix Kubelet
- 
-Solve this question on: ssh cka1024
 
 There seems to be an issue with the kubelet on controlplane `node cka1024`, it's not running.
 
@@ -2237,10 +2231,9 @@ Fix the kubelet and confirm that the node is available in Ready state.
 
  ℹ️ The node has no taints and can schedule Pods without additional tolerations
 
-Answer:
+**Answer**:
 
-Investigate
-Check node status:
+Investigate, Check node status:
 ```bash
 ➜ ssh cka1024
 
@@ -2259,7 +2252,9 @@ Okay, this looks very wrong. First we check if the kubelet is running:
 ➜ root@cka1024:~# ps aux | grep kubelet
 root       12892  0.0  0.1   7076  ...  0:00 grep --color=auto kubelet
 ```
-No kubectl process running, just the grep command itself is displayed. We check if the kubelet is configured as service, which is default for a kubeadm installation:
+No kubectl process running, just the grep command itself is displayed. 
+
+We check if the kubelet is configured as service, which is default for a kubeadm installation:
 ```bash
 ➜ root@cka1024:~# service kubelet status
 ○ kubelet.service - kubelet: The Kubernetes Node Agent
@@ -2275,6 +2270,7 @@ No kubectl process running, just the grep command itself is displayed. We check 
 We can see it's not running (inactive) in this line:
 
 Active: inactive (dead) since Sun 2025-03-23 08:16:52 UTC; 1 month 0 days ago
+
 But the kubelet is configured as a service with config at `/usr/lib/systemd/system/kubelet.service`, let's try to start it:
 
 ```bash
@@ -2308,8 +2304,9 @@ That's the issue: wrong path to the kubelet binary.
 ``` 
 
 Read Logs
-Usually we need to dig a bit deeper and check logs using journalctl -u kubelet or cat /var/log/syslog | grep kubelet:
+Usually we need to dig a bit deeper and check logs using `journalctl -u kubelet or cat /var/log/syslog | grep kubelet`:
 
+```bash
 ➜  root@cka1024:~# cat /var/log/syslog | grep kubelet
 2025-03-23T08:13:26.775366+00:00 ubuntu systemd[1]: Started kubelet.service - kubelet: The Kubernetes Node Agent.
 2025-03-23T08:13:26.782571+00:00 ubuntu (kubelet)[6826]: kubelet.service: Referenced but unset environment variable evaluates to an empty string: KUBELET_KUBEADM_ARGS
@@ -2321,23 +2318,29 @@ Usually we need to dig a bit deeper and check logs using journalctl -u kubelet o
 If we check logs we should always look at the time, we probably only want the latest ones. Here we see:
 
 kubelet.service: Main process exited, code=exited, status=203/EXEC
+
+```
 The logs don't show any error messages from the kubelet itself. Usually if the kubelet is started and exits because of an error, like an unknown argument passed, there will be error logs. But because there is nothing more here it could be a good idea to try to execute the kubelet binary manually.
 
 We already did this above before checking the logs and it showed us that a wrong binary path was used in the service config file.
 
- 
 
 Fix the Kubelet
 We go ahead and correct the path in file `/usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf`:
 
+```bash
 ➜ root@cka1024:~# vim /usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf
 # cka1024:/usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf
+```
 
-# Note: This dropin only works with kubeadm and kubelet v1.11+
+Note: This dropin only works with kubeadm and kubelet v1.11+
+```bash
 [Service]
 Environment="KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf"
+
 Environment="KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml"
 # This is a file that "kubeadm init" and "kubeadm join" generates at runtime, populating the KUBELET_KUBEADM_ARGS variable dynamically
+
 EnvironmentFile=-/var/lib/kubelet/kubeadm-flags.env
 # This is a file that the user can use for overrides of the kubelet args as a last resort. Preferably, the user should use
 # the .NodeRegistration.KubeletExtraArgs object in the configuration files instead. KUBELET_EXTRA_ARGS should be sourced from this file.
@@ -2367,7 +2370,7 @@ Now we reload the service:
              └─13124 /usr/bin/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/ku>
 ...
 ```
-
+```bash
 ➜ root@cka1024:~# ps aux | grep kubelet
 root       13124  9.2  7.1 1896084 82432 ?       Ssl  12:33   0:01 /usr/bin/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf --config=/var/lib/kubelet/config.yaml --container-runtime-endpoint=unix:///var/run/containerd/containerd.sock --pod-infra-container-image=registry.k8s.io/pause:3.10
 ...
@@ -2379,24 +2382,26 @@ ccfbd17742b05  ...  25 seconds ago    Running     kube-controller-manager   ...
 ff3910e3c8c6c  ...  25 seconds ago    Running     kube-scheduler            ...
 9b49473786774  ...  25 seconds ago    Running     kube-apiserver            ...
 f5de1f6e11d5c  ...  26 seconds ago    Running     etcd                      ...
+```
 ℹ️ In this environment crictl can be used for container management. In the real exam this could also be docker. Both commands can be used with the same arguments.
 
 Also the node should be available, give it a bit of time though:
-
+```bash
 ➜ root@cka1024:~# k get node
 NAME      STATUS   ROLES           AGE   VERSION
 cka1024   Ready    control-plane   31d   v1.33.1
+```
 ℹ️ It might take some time till k get node doesn't throw any errors after fixing the issue
 
 Finally we create the requested Pod:
-
+```bash
 ➜ root@cka1024:~# k run success --image nginx:1-alpine
 pod/success created
 
 ➜ root@cka1024:~# k get pod success -o wide
 NAME      READY   STATUS    ...   NODE      NOMINATED NODE   READINESS GATES
 success   1/1     Running   ...   cka1024   <none>           <none>
- 
+ ```
 
 ---
 
@@ -2406,10 +2411,10 @@ Solve this question on: ssh cka2560
 
 You have been tasked to perform the following etcd operations:
 - Run etcd --version and store the output at `/opt/course/7/etcd-version`
-Make a snapshot of etcd and save it at `/opt/course/7/etcd-snapshot.db`
+- Make a snapshot of etcd and save it at `/opt/course/7/etcd-snapshot.db`
 
-Answer:
-Step 1: Etcd Version
+**Answer**:
+### Step 1: Etcd Version
 Here we simply need to execute a command, shouldn't be that hard:
 
 ```bash
@@ -2430,7 +2435,7 @@ root@cka2560:~# k -n kube-system exec etcd-cka2560 -- etcd --version > /opt/cour
  
 ```
 
-Step 2: Etcd Snapshot
+### Step 2: Etcd Snapshot
 First we log into the controlplane and try to create a snapshot of etcd:
 
 ```bash
@@ -2442,8 +2447,10 @@ First we log into the controlplane and try to create a snapshot of etcd:
 But it fails or hangs because we need to authenticate ourselves. For the necessary information we can check the etc manifest:
 
 ➜ root@cka2560:~# vim /etc/kubernetes/manifests/etcd.yaml
-We only check the etcd.yaml for necessary information we don't change it.
+```
 
+We only check the etcd.yaml for necessary information we don't change it.
+```bash
 # cka2560:/etc/kubernetes/manifests/etcd.yaml
 apiVersion: v1
 kind: Pod
@@ -2552,7 +2559,7 @@ It's very important to wait for all K8s controlplane containers to be removed be
 ℹ️ In this environment crictl can be used for container management. In the real exam this could also be docker. Both commands can be used with the same arguments.
 
 Now we restore the snapshot into a specific directory:
-
+```bash
 ➜ root@cka2560:~# TCDCTL_API=3 etcdctl snapshot restore /opt/course/7/etcd-snapshot.db --data-dir /var/lib/etcd-snapshot --cacert /etc/kubernetes/pki/etcd/ca.crt --cert /etc/kubernetes/pki/etcd/server.crt --key /etc/kubernetes/pki/etcd/server.key
 Deprecated: Use `etcdutl snapshot restore` instead.
 
@@ -2561,9 +2568,9 @@ Deprecated: Use `etcdutl snapshot restore` instead.
 2025-03-02T13:38:07Z    info    membership/cluster.go:421       added member    {"cluster-id": "cdf818194e3a8c32", "local-member-id": "0", "added-peer-id": "8e9e05c52164694d", "added-peer-peer-urls": ["http://localhost:2380"]}
 2025-03-02T13:38:08Z    info    snapshot/v3_snapshot.go:293     restored snapshot       {"path": "/opt/course/7/etcd-snapshot.db", "wal-dir": "/var/lib/etcd-snapshot/member/wal", "data-dir": "/var/lib/etcd-snapshot", "snap-dir": "/var/lib/etcd-snapshot/member/snap", "initial-memory-map-size": 0}
 We could specify another host to make the backup from by using etcdctl --endpoints http://IP, but here we just use the default value which is: http://127.0.0.1:2379,http://127.0.0.1:4001.
-
+```
 The restored files are located at the new folder /var/lib/etcd-snapshot, now we have to tell etcd to use that directory:
-
+```bash
 ➜ root@cka2560:~# vim /etc/kubernetes/etcd.yaml
 # /etc/kubernetes/etcd.yaml
 apiVersion: v1
@@ -2591,8 +2598,9 @@ spec:
       type: DirectoryOrCreate
     name: etcd-data
 status: {}
+```
 Now we move all controlplane yaml again into the manifest directory. Give it some time (up to several minutes) for etcd to restart and for the api-server to be reachable again:
-
+```bash
 ➜ root@cka2560:/etc/kubernetes/manifests# mv ../*.yaml .
 
 ➜ root@cka2560:/etc/kubernetes/manifests# watch crictl ps
@@ -2601,17 +2609,17 @@ Then we check again for the Pod:
 ➜ root@cka2560:~# kubectl get pod -l run=test
 No resources found in default namespace.
 Awesome, snapshot and restore worked as our Pod is gone.
-
+```
  ---
 
 ## Question 8 | Get Controlplane Information
  
 Solve this question on: ssh cka8448
 
-Check how the controlplane components kubelet, kube-apiserver, kube-scheduler, kube-controller-manager and etcd are started/installed on the controlplane node.
-Also find out the name of the DNS application and how it's started/installed in the cluster.
-Write your findings into file `/opt/course/8/controlplane-components.txt`. 
-The file should be structured like:
+- Check how the controlplane components kubelet, kube-apiserver, kube-scheduler, kube-controller-manager and etcd are started/installed on the controlplane node.
+- Also find out the name of the DNS application and how it's started/installed in the cluster.
+- Write your findings into file `/opt/course/8/controlplane-components.txt`.
+- The file should be structured like:
 ```bash
 # /opt/course/8/controlplane-components.txt
 kubelet: [TYPE]
@@ -2623,14 +2631,16 @@ dns: [TYPE] [NAME]
 Choices of [TYPE] are: not-installed, process, static-pod, pod
 ``` 
 
-Answer:
+**Answer**:
 We could start by finding processes of the requested components, especially the kubelet at first:
 
+```bash
 ➜ candidate@cka8448:~$ sudo -i
 
 ➜ root@cka8448:~# ps aux | grep kubelet
+```
 We can see which components are controlled via systemd looking at /usr/lib/systemd directory:
-
+```bash
 ➜ root@cka8448:~# find /usr/lib/systemd | grep kube
 /usr/lib/systemd/user/podman-kube@.service
 /usr/lib/systemd/system/kubelet.service.d
@@ -2663,9 +2673,10 @@ This shows kubelet is controlled via systemd, but no other service named kube no
 /etc/kubernetes/manifests/kube-apiserver.yaml
 /etc/kubernetes/manifests/kube-scheduler.yaml
 The kubelet could also have a different manifests directory specified via a KubeletConfiguration, but the one above is the default one.
+```
 
 This means the main 4 controlplane services are setup as static Pods. Actually, let's check all Pods running on in the kube-system Namespace:
-
+```bash
 ➜ root@cka8448:~# k -n kube-system get pod -o wide
 NAME                              ...   NODE      
 coredns-6f8b9d9f4b-8z7rb          ...   cka8448   
@@ -2675,11 +2686,12 @@ kube-apiserver-cka8448            ...   cka8448
 kube-controller-manager-cka8448   ...   cka8448   
 kube-proxy-dvv7m                  ...   cka8448   
 kube-scheduler-cka8448            ...   cka8448   
-weave-net-gjrxh                   ...   cka8448    
+weave-net-gjrxh                   ...   cka8448
+```
 Above we see the 4 static pods, with -cka8448 as suffix.
 
 We also see that the dns application seems to be coredns, but how is it controlled?
-
+```bash
 ➜ root@cka8448$ kubectl -n kube-system get ds
 NAME         DESIRED   ...   NODE SELECTOR            AGE
 kube-proxy   1         ...   kubernetes.io/os=linux   67m
@@ -2688,8 +2700,10 @@ weave-net    1         ...   <none>                   67m
 ➜ root@cka8448$ k -n kube-system get deploy
 NAME      READY   UP-TO-DATE   AVAILABLE   AGE
 coredns   2/2     2            2           68m
+```
 Seems like coredns is controlled via a Deployment. We combine our findings in the requested file:
 
+```bash
 # /opt/course/8/controlplane-components.txt
 kubelet: process
 kube-apiserver: static-pod
@@ -2698,43 +2712,51 @@ kube-controller-manager: static-pod
 etcd: static-pod
 dns: pod coredns
 You should be comfortable investigating a running cluster, know different methods on how a cluster and its services can be setup and be able to troubleshoot and find error sources.
+```
 
 ---
+
 ## Question 9 | Kill Scheduler, Manual Scheduling
  
 Solve this question on: ssh cka5248
 
 Temporarily stop the kube-scheduler, this means in a way that you can start it again afterwards.
 - Create a single Pod named manual-schedule of image `httpd:2-alpine`, confirm it's created but not scheduled on any node.
-Now you're the scheduler and have all its power, manually schedule that Pod on node cka5248. Make sure it's running.
-Start the kube-scheduler again and confirm it's running correctly by creating a second Pod named manual-schedule2 of image httpd:2-alpine and check if it's running on cka5248-node1.
+- Now you're the scheduler and have all its power, manually schedule that Pod on node cka5248. Make sure it's running.
+- Start the kube-scheduler again and confirm it's running correctly by creating a second Pod named `manual-schedule2` of image `httpd:2-alpine` and check if it's running on `cka5248-node1`.
 
-Answer:
+**Answer**:
 Stop the Scheduler
 First we find the controlplane node:
-
+```bash
 ➜ candidate@cka5248:~$ k get node
 NAME            STATUS   ROLES           AGE     VERSION
 cka5248         Ready    control-plane   6d22h   v1.33.1
 cka5248-node1   Ready    <none>          6d22h   v1.33.1
+```
 Then we connect and check if the scheduler is running:
 
+```bash
 ➜ candidate@cka5248:~$ sudo -i
 
 ➜ root@cka5248:~# kubectl -n kube-system get pod | grep schedule
 kube-scheduler-cka5248            1/1     Running   0               6d22h
+```
 Kill the Scheduler (temporarily):
 
+```bash
 ➜ root@cka5248:~# cd /etc/kubernetes/manifests/
 
 ➜ root@cka5248:~# mv kube-scheduler.yaml ..
+```
 And it should be stopped, we can wait for the container to be removed with watch crictl ps:
-
+```bash
 ➜ root@cka5248:/etc/kubernetes/manifests# watch crictl ps
 
 ➜ root@cka5248:/etc/kubernetes/manifests# kubectl -n kube-system get pod | grep schedule
 
-➜ root@cka5248:/etc/kubernetes/manifests#
+➜ root@cka5248:/etc/kubernetes/manifests
+```
 ℹ️ In this environment crictl can be used for container management. In the real exam this could also be docker. Both commands can be used with the same arguments.
 
  
@@ -2746,15 +2768,15 @@ Now we create the Pod:
 pod/manual-schedule created
 ```
 And confirm it has no node assigned:
-
+```bash
 ➜ root@cka5248:~# k get pod manual-schedule -o wide
 NAME              READY   STATUS    RESTARTS   AGE   IP       NODE    ...
 manual-schedule   0/1     Pending   0          14s   <none>   <none>  ...
  
-
+```
 Manually schedule the Pod
 Let's play the scheduler now:
-
+```bash
 ➜ root@cka5248:~# k get pod manual-schedule -o yaml > 9.yaml
 # cka5248:/root/9.yaml
 apiVersion: v1
@@ -2787,23 +2809,25 @@ spec:
       name: default-token-nxnc7
       readOnly: true
   dnsPolicy: ClusterFirst
-...
+```
 
 The scheduler sets the nodeName for a Pod declaration. How it finds the correct node to schedule on, that's a very much complicated matter and takes many variables into account.
 
 As we cannot kubectl apply or kubectl edit , in this case we need to delete and create or replace:
-
+```bash
 ➜ root@cka5248:~# k -f 9.yaml replace --force
 How does it look?
 
 ➜ root@cka5248:~# k get pod manual-schedule -o wide
 NAME              READY   STATUS    ...   NODE            
 manual-schedule   1/1     Running   ...   cka5248
+```
 It looks like our Pod is running on the controlplane now as requested, although no tolerations were specified. Only the scheduler takes taints/tolerations/affinity into account when finding the correct node name. That's why it's still possible to assign Pods manually directly to a controlplane node and skip the scheduler.
 
  
 
 Start the scheduler again
+```bash
 ➜ root@cka5248:~# cd /etc/kubernetes/manifests/
 
 ➜ root@cka5248:/etc/kubernetes/manifests# mv ../kube-scheduler.yaml .
@@ -2819,35 +2843,38 @@ Schedule a second test Pod:
 manual-schedule    1/1     Running   0          95s   10.32.0.2   cka5248
 manual-schedule2   1/1     Running   0          9s    10.44.0.3   cka5248-node1
 Back to normal.
+ ```
 
- 
-
- 
+ ----
 
 ## Question 10 | PV PVC Dynamic Provisioning
  
 Solve this question on: ssh cka6016
 
 There is a backup Job which needs to be adjusted to use a PVC to store backups.
-- Create a StorageClass named local-backup which uses provisioner: rancher.io/local-path and volumeBindingMode: WaitForFirstConsumer. To prevent possible data loss the StorageClass should keep a PV retained even if a bound PVC is deleted.
-Adjust the Job at /opt/course/10/backup.yaml to use a PVC which request 50Mi storage and uses the new StorageClass.
+- Create a StorageClass named `local-backup` which uses `provisioner: rancher.io/local-path` and `volumeBindingMode: WaitForFirstConsumer`.
+- To prevent possible data loss the StorageClass should keep a PV retained even if a bound PVC is deleted.
+- Adjust the Job at `/opt/course/10/backup.yaml` to use a PVC which request `50Mi` storage and uses the new StorageClass.
 Deploy your changes, verify the Job completed once and the PVC was bound to a newly created PV.
 
-Answer:
-The StorageClass should use provider rancher.io/local-path, which is of the project Local Path Provisioner. This project works with Dynamic Volume Provisioning, but instead of creating actual volumes it uses local storage on the node where the Pod runs, by default at path /opt/local-path-provisioner.
+**Answer**:
+The StorageClass should use provider `rancher.io/local-path`, which is of the project Local Path Provisioner. This project works with Dynamic Volume Provisioning, but instead of creating actual volumes it uses local storage on the node where the Pod runs, by default at path `/opt/local-path-provisioner`.
 
 Cloud companies like AWS or GCP provide their own StorageClasses and providers, which if used for PVCs create PVs backed by actual volumes in the cloud account. 
 
 Create StorageClass
 First we can have a look at existing ones:
 
+```bash
 ➜ ssh cka6016
 
 ➜ candidate@cka6016:~$ k get sc
 NAME         PROVISIONER             RECLAIMPOLICY   VOLUMEBINDINGMODE       ...
 local-path   rancher.io/local-path   Delete          WaitForFirstConsumer    ...
+```
 The local-path is the default one available if the Local Path Provisioner is installed. But we can see it has a reclaimPolicy of Delete. Still we could use this one as template for the one we need to create:
 
+```bash
 ➜ candidate@cka6016:~$ vim sc.yaml
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -2856,8 +2883,10 @@ metadata:
 provisioner: rancher.io/local-path
 reclaimPolicy: Retain
 volumeBindingMode: WaitForFirstConsumer
+```
 We need to use reclaimPolicy: Retain because this will cause the PV to not get deleted even after the associated PVC is deleted. It's very easy to delete resources in Kubernetes which can lead to quick data loss. Especially in this case where important data, like from a backup, is in play.
 
+```bash
 ➜ candidate@cka6016:~$ k -f sc.yaml apply
 storageclass.storage.k8s.io/local-backup created
 
@@ -2865,6 +2894,7 @@ storageclass.storage.k8s.io/local-backup created
 NAME           PROVISIONER             RECLAIMPOLICY   VOLUMEBINDINGMODE      ...
 local-backup   rancher.io/local-path   Retain          WaitForFirstConsumer   ...
 local-path     rancher.io/local-path   Delete          WaitForFirstConsumer   ...
+```
 This looks like what we want. Now we have the choice between two StorageClasses.
 
  
@@ -2903,7 +2933,7 @@ spec:
 Currently it uses an emptyDir volume which means in only stores data in the temporary filesystem of the Pod. This means once the Pod is deleted the data is deleted as well.
 
 We could go ahead and create it now to see if everything else works:
-
+```bash
 ➜ candidate@cka6016:~$ k -f /opt/course/10/backup.yaml apply
 job.batch/backup created
 
@@ -2913,6 +2943,7 @@ job.batch/backup   Complete   1/1           5s         11s
 
 NAME               READY   STATUS      RESTARTS   AGE
 pod/backup-pll27   0/1     Completed   0          21s
+```
 Looks like it completed without errors.
 
  
@@ -2920,6 +2951,7 @@ Looks like it completed without errors.
 Adjust Job template
 For this we first need to create a PVC and then use in the Job template:
 
+```bash
 ➜ candidate@cka6016:~$ cd /opt/course/10
 
 ➜ candidate@cka6016:/opt/course/10$ cp backup.yaml backup.yaml_ori
@@ -2966,9 +2998,9 @@ spec:
             - name: backup
               mountPath: /backup
       restartPolicy: Never
+```
 We first made a backup of the provided file, which is always a good idea. Then we added the new PVC and referenced the PVC in the Pod volumes: section.
 
- 
 
 Deploy changes and verify
 First we delete the existing Job because we did create it once before without any changes. And then we deploy:
@@ -2998,12 +3030,14 @@ pvc-dbcce...  50Mi       ...  Retain          Bound   project-bern/backup-pvc   
 Optional investigation
 Because the Local Path Provisioner is used we can actually see the volume represented on the filesystem. And because this cluster only has one node, and we're already on it, we can simply do:
 
+```bash
 ➜ candidate@cka6016:~$ find /opt/local-path-provisioner
 /opt/local-path-provisioner/
 /opt/local-path-provisioner/pvc-dbccec94-cc31-4e30-b5fe-7cb42a85fe7a_project-bern_backup-pvc
 /opt/local-path-provisioner/pvc-dbccec94-cc31-4e30-b5fe-7cb42a85fe7a_project-bern_backup-pvc/backup-2024-12-30-17-27-51.tar.gz
+```
 If we run the Job again we should see another backup file:
-
+```bash
 ➜ candidate@cka6016:~$ k -n project-bern delete job backup 
 job.batch "backup" deleted
 
@@ -3023,43 +3057,39 @@ pod/backup-jpq2t   0/1     Completed   0          20s
 /opt/local-path-provisioner/pvc-dbccec94-cc31-4e30-b5fe-7cb42a85fe7a_project-bern_backup-pvc
 /opt/local-path-provisioner/pvc-dbccec94-cc31-4e30-b5fe-7cb42a85fe7a_project-bern_backup-pvc/backup-2024-12-30-17-27-51.tar.gz
 /opt/local-path-provisioner/pvc-dbccec94-cc31-4e30-b5fe-7cb42a85fe7a_project-bern_backup-pvc/backup-2024-12-30-17-34-26.tar.gz
+```
 And if we delete the PVC we should still see the PV and the files in the volume (filesystem in this case):
 
 ℹ️ Removing the PVC and Job might affect your scoring for this question, so best create them again after testing deletion
 
+```bash
 ➜ candidate@cka6016:~$ k -n project-bern delete pvc backup-pvc 
 persistentvolumeclaim "backup-pvc" deleted
 
 ➜ candidate@cka6016:~$ k get pv,pvc -A
 NAME          CAPACITY   ...  RECLAIM POLICY   STATUS     CLAIM                     ...
 pvc-dbcce...  50Mi       ...  Retain           Released   project-bern/backup-pvc   ...
+```
 We can no longer see the PVC, but the PV is in status Released. This is because we set the reclaimPolicy: Retain in the StorageClass. Now we could manually export/rescue the data in the volume and afterwards delete the PV manually.
 
- 
-
- 
+ --- 
 
 ## Question 11 | Create Secret and mount into Pod
- 
-Solve this question on: ssh cka2560
 
 - Create Namespace secret and implement the following in it:
-Create Pod secret-pod with image busybox:1. It should be kept running by executing sleep 1d or something similar
-Create the existing Secret /opt/course/11/secret1.yaml and mount it readonly into the Pod at /tmp/secret1
-Create a new Secret called secret2 which should contain user=user1 and pass=1234. These entries should be available inside the Pod's container as environment variables APP_USER and APP_PASS
+- Create Pod `secret-pod` with image `busybox:1`. It should be kept running by executing sleep 1d or something similar
+- Create the existing Secret `/opt/course/11/secret1.yaml` and mount it readonly into the Pod at `/tmp/secret1`
+- Create a new Secret called `secret2` which should contain `user=user1` and `pass=1234`. These entries should be available inside the Pod's container as environment variables `APP_USER` and `APP_PASS`
 
-Answer
-First we create the Namespace:
-
-➜ ssh cka2560
-
-➜ candidate@cka2560:~$ k create ns secret
-namespace/secret created
+**Answer**
  
-Secret 1
+#### Secret 1
 To create the existing Secret we need to adjust the Namespace for it:
 
 ```bash
+k create ns secret
+namespace/secret created
+
 ➜ candidate@cka2560:~$ cp /opt/course/11/secret1.yaml 11_secret1.yaml
 # cka2560:/home/candidate/11_secret1.yaml
 apiVersion: v1
@@ -3074,16 +3104,18 @@ metadata:
 secret/secret1 created
  ```
 
-Secret 2
+#### Secret 2
 Next we create the second Secret:
 
+```bash
 ➜ candidate@cka2560:~$ k -n secret create secret generic secret2 --from-literal=user=user1 --from-literal=pass=1234
 secret/secret2 created
- 
+ ```
 
 Pod
 Now we create the Pod template:
 
+```bash
 ➜ candidate@cka2560:~$ k -n secret run secret-pod --image=busybox:1 --dry-run=client -o yaml -- sh -c "sleep 1d" > 11.yaml
 Then make the necessary changes:
 
@@ -3131,8 +3163,10 @@ And execute:
 
 ➜ candidate@cka2560:~$ k -f 11.yaml create
 pod/secret-pod created
+```
 Finally we verify:
 
+```bash
 ➜ candidate@cka2560:~$ k -n secret exec secret-pod -- env | grep APP
 APP_PASS=1234
 APP_USER=user1
@@ -3154,23 +3188,23 @@ APP_USER=user1
 # Default-Stop:      0
 # Short-Description: Execute the halt command.
 # Description:
-...
+```
  
-
- 
+---
 
 ## Question 12 | Schedule Pod on Controlplane Nodes
  
 Solve this question on: ssh cka5248
 
-- Create a Pod of image httpd:2-alpine in Namespace default.
-The Pod should be named pod1 and the container should be named pod1-container.
-This Pod should only be scheduled on controlplane nodes.
+- Create a Pod of image `httpd:2-alpine` in Namespace `default`.
+- The Pod should be named `pod1` and the container should be named `pod1-container`.
+- This Pod should only be scheduled on controlplane nodes.
 Do not add new labels to any nodes.
 
-Answer:
+**Answer**:
 First we find the controlplane node(s) and their taints:
 
+```bash
 ➜ ssh cka5248
 
 ➜ candidate@cka5248:~$ k get node
@@ -3185,15 +3219,17 @@ Unschedulable:      false
 ➜ candidate@cka5248:~$ k get node cka5248 --show-labels
 NAME      STATUS   ROLES           AGE   VERSION   LABELS
 cka5248   Ready    control-plane   91m   v1.33.1   beta.kubernetes.io/arch=amd64,beta.kubernetes.io/os=linux,kubernetes.io/arch=amd64,kubernetes.io/hostname=cka5248,kubernetes.io/os=linux,node-role.kubernetes.io/control-plane=,node.kubernetes.io/exclude-from-external-load-balancers=
-Next we create the Pod yaml:
+```
 
-➜ candidate@cka5248:~$ k run pod1 --image=httpd:2-alpine --dry-run=client -o yaml > 12.yaml
- 
+Next we create the Pod yaml: 
 
 Solution using NodeSelector
 Use the K8s docs and search for tolerations and nodeSelector to find examples, then update:
 ```bash
+➜ candidate@cka5248:~$ k run pod1 --image=httpd:2-alpine --dry-run=client -o yaml > 12.yaml
+
 # cka5248:/home/candidate/12.yaml
+
 apiVersion: v1
 kind: Pod
 metadata:
@@ -3217,10 +3253,11 @@ status: {}
 ```
 ℹ️ The nodeSelector specifies node-role.kubernetes.io/control-plane with no value because this is a key-only label and we want to match regardless of the value
 
-Important here to add the toleration for running on controlplane nodes, but also the nodeSelector to make sure it only runs on controlplane nodes. If we just specify a toleration the Pod can be scheduled on controlplane or worker nodes.
+Important here to add the toleration for running on controlplane nodes, but also the nodeSelector to make sure it only runs on controlplane nodes. 
 
+If we just specify a toleration the Pod can be scheduled on controlplane or worker nodes.
  
-Solution using NodeAffinity
+#### Solution using NodeAffinity
 We could also use nodeAffinity instead of nodeSelector, although in this case it is more complex and not really suggested:
 ```bash
 # cka5248:/home/candidate/12.yaml
@@ -3265,30 +3302,27 @@ NAME   READY   STATUS    ...   NODE      NOMINATED NODE   READINESS GATES
 pod1   1/1     Running   ...   cka5248   <none>           <none>
 We can see the Pod is scheduled on the controlplane node.
 
- 
-
- 
+ ---
 
 ## Question 13 | Multi Containers and Pod shared Volume
 
 Solve this question on: ssh cka3200
 
-Create a Pod with multiple containers named multi-container-playground in Namespace default:
+Create a Pod with multiple containers named `multi-container-playground` in Namespace `default`:
 
 It should have a volume attached and mounted into each container. The volume shouldn't be persisted or shared with other Pods
-- Container c1 with image nginx:1-alpine should have the name of the node where its Pod is running on available as environment variable MY_NODE_NAME
-Container c2 with image busybox:1 should write the output of the date command every second in the shared volume into file date.log. You can use while true; do date >> /your/vol/path/date.log; sleep 1; done for this.
-Container c3 with image busybox:1 should constantly write the content of file date.log from the shared volume to stdout. You can use tail -f /your/vol/path/date.log for this.
+- Container `c1` with image `nginx:1-alpine` should have the name of the node where its Pod is running on available as environment variable `MY_NODE_NAME`
+- Container `c2` with image `busybox:1` should write the output of the date command every second in the shared volume into file `date.log`. You can use `while true; do date >> /your/vol/path/date.log; sleep 1; done` for this.
+- Container `c3` with image `busybox:1` should constantly write the content of file `date.log` from the shared volume to stdout. You can use `tail -f /your/vol/path/date.log` for this.
 
 ℹ️ Check the logs of container c3 to confirm correct setup
 
-Answer:
+**Answer**:
 First we create the Pod template:
-
+```bash
 ➜ ssh cka3200
 
-➜ candidate@cka3200:~$ k run multi-container-playground --image=nginx:1-alpine --dry-run=client -o yaml > 13.yaml
-And add the other containers and the commands they should execute:
+k run multi-container-playground --image=nginx:1-alpine --dry-run=client -o yaml > 13.yaml
 
 # cka3200:/home/candidate/13.yaml
 apiVersion: v1
@@ -3329,20 +3363,26 @@ spec:
     - name: vol                                                                   # add
       emptyDir: {}                                                                # add
 status: {}
+```
 Well, there was a lot requested here! We check if everything is good with the Pod:
 
+```bash
 ➜ candidate@cka3200:~$ k -f 13.yaml create
 pod/multi-container-playground created
 
 ➜ candidate@cka3200:~$ k get pod multi-container-playground
 NAME                         READY   STATUS    RESTARTS   AGE
 multi-container-playground   3/3     Running   0          47s
+```
 Not a bad start. Now we check if container c1 has the requested node name as env variable:
 
+```bash
 ➜ candidate@cka3200:~$ k exec multi-container-playground -c c1 -- env | grep MY
 MY_NODE_NAME=cka3200
+```
 And finally we check the logging, which means that c2 correctly writes and c3 correctly reads and outputs to stdout:
 
+```bash
 ➜ candidate@cka3200:~$ k logs multi-container-playground -c c3
 Tue Nov  5 13:41:33 UTC 2024
 Tue Nov  5 13:41:34 UTC 2024
@@ -3350,22 +3390,24 @@ Tue Nov  5 13:41:35 UTC 2024
 Tue Nov  5 13:41:36 UTC 2024
 Tue Nov  5 13:41:37 UTC 2024
 Tue Nov  5 13:41:38 UTC 2024
+```
+
+---
  
 ## Question 14 | Find out Cluster Information
  
 Solve this question on: ssh cka8448
 
-
 You're ask to find out following information about the cluster:
 
 - How many controlplane nodes are available?
-How many worker nodes (non controlplane nodes) are available?
-What is the Service CIDR?
-Which Networking (or CNI Plugin) is configured and where is its config file?
-Which suffix will static pods have that run on cka8448?
-Write your answers into file /opt/course/14/cluster-info, structured like this:
+- How many worker nodes (non controlplane nodes) are available?
+- What is the Service CIDR?
+- Which Networking (or CNI Plugin) is configured and where is its config file?
+- Which suffix will static pods have that run on cka8448?
+- Write your answers into file `/opt/course/14/cluster-info`, structured like this:
 
-# /opt/course/14/cluster-info
+ /opt/course/14/cluster-info
 1: [ANSWER]
 2: [ANSWER]
 3: [ANSWER]
@@ -3375,23 +3417,27 @@ Write your answers into file /opt/course/14/cluster-info, structured like this:
 
 Answer:
 How many controlplane and worker nodes are available?
+```
 ➜ ssh cka8448
 
 ➜ candidate@cka8448:~$ k get node
 NAME      STATUS   ROLES           AGE   VERSION
 cka8448   Ready    control-plane   71m   v1.33.1
+```
 We see one controlplane and no worker nodes.
 
  
 
 What is the Service CIDR?
+```
 ➜ candidate@cka8448:~$ sudo -i
 
 ➜ root@cka8448:~# cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep range
     - --service-cluster-ip-range=10.96.0.0/12
- 
+ ```
 
 Which Networking (or CNI Plugin) is configured and where is its config file?
+```bash
 ➜ root@cka8448:~# find /etc/cni/net.d/
 /etc/cni/net.d/
 /etc/cni/net.d/.kubernetes-cni-keep
@@ -3415,18 +3461,18 @@ Which Networking (or CNI Plugin) is configured and where is its config file?
         }
     ]
 }
-By default the kubelet looks into /etc/cni/net.d to discover the CNI plugins. This will be the same on every controlplane and worker nodes.
+```
+By default the kubelet looks into `/etc/cni/net.d` to discover the CNI plugins. This will be the same on every controlplane and worker nodes.
 
  
-
 Which suffix will static pods have that run on cka8448?
-The suffix is the node hostname with a leading hyphen.
+`The suffix is the node hostname with a leading hyphen.`
 
- 
 
 Result
 The resulting /opt/course/14/cluster-info could look like:
 
+```bash
 # /opt/course/14/cluster-info
 
 # How many controlplane nodes are available?
@@ -3443,8 +3489,7 @@ The resulting /opt/course/14/cluster-info could look like:
 
 # Which suffix will static pods have that run on cka8448?
 5: -cka8448
- 
-
+```
  
 ---
 
@@ -3452,22 +3497,23 @@ The resulting /opt/course/14/cluster-info could look like:
  
 Solve this question on: ssh cka6016
 
+- Write a kubectl command into `/opt/course/15/cluster_events.sh` which shows the latest events in the whole cluster, ordered by time (`metadata.creationTimestamp`)
+- Delete the kube-proxy Pod and write the events this caused into `/opt/course/15/pod_kill.log` on cka6016
+- Manually kill the containerd container of the kube-proxy Pod and write the events into `/opt/course/15/container_kill.log`
 
-Write a kubectl command into `/opt/course/15/cluster_events.sh` which shows the latest events in the whole cluster, ordered by time (metadata.creationTimestamp)
-Delete the kube-proxy Pod and write the events this caused into /opt/course/15/pod_kill.log on cka6016
-Manually kill the containerd container of the kube-proxy Pod and write the events into `/opt/course/15/container_kill.log`
-
-Answer:
+**Answer**:
  
 
-Step 1
-➜ ssh cka6016
+### Step 1
 
+```bash
 ➜ candidate@cka6016:~$ vim /opt/course/15/cluster_events.sh
-# cka6016:/opt/course/15/cluster_events.sh
+
 kubectl get events -A --sort-by=.metadata.creationTimestamp
+```
 And we can execute it which should show recent events:
 
+```
 ➜ candidate@cka6016:~$ sh /opt/course/15/cluster_events.sh
 NAMESPACE     LAST SEEN   TYPE     REASON           OBJECT                       MESSAGE
 ...
@@ -3482,22 +3528,25 @@ default       19m         Normal    Created             pod/team-york-board-7d74
 default       19m         Normal    Started             pod/team-york-board-7d74f8f86c-9fg47    Started container httpd
 default       19m         Normal    Started             pod/team-york-board-7d74f8f86c-xnprt    Started container httpd
 ...
- 
+```
 
-Step 2
+### Step 2
 We delete the kube-proxy Pod:
-
+```
 ➜ candidate@cka6016:~$ k -n kube-system get pod -l k8s-app=kube-proxy -owide
 NAME               READY   ...     NODE      NOMINATED NODE   READINESS GATES
 kube-proxy-lf2fs   1/1     ...     cka6016   <none>           <none>
 
 ➜ candidate@cka6016:~$ k -n kube-system delete pod kube-proxy-lf2fs
 pod "kube-proxy-lf2fs" deleted
+```
 Now we can check the events, for example by using the command that we created before:
 
+```
 ➜ candidate@cka6016:~$ sh /opt/course/15/cluster_events.sh
+```
 Write the events caused by the deletion into /opt/course/15/pod_kill.log on cka6016:
-
+```
 # cka6016:/opt/course/15/pod_kill.log
 kube-system   12s         Normal    Killing             pod/kube-proxy-lf2fs                    Stopping container kube-proxy
 kube-system   12s         Normal    SuccessfulCreate    daemonset/kube-proxy                    Created pod: kube-proxy-wb4tb
@@ -3506,15 +3555,15 @@ kube-system   11s         Normal    Pulled              pod/kube-proxy-wb4tb    
 kube-system   11s         Normal    Created             pod/kube-proxy-wb4tb                    Created container kube-proxy
 kube-system   11s         Normal    Started             pod/kube-proxy-wb4tb                    Started container kube-proxy
 default       10s         Normal    Starting            node/cka6016  
- 
+ ```
 
-Step 3
+### Step 3
 ℹ️ Node cka6016 is already the controlplane and the only node of the cluster. Otherwise we might have to ssh onto the correct worker node where the Pod is running instead
 
  
-
 Finally we will try to provoke events by killing the container belonging to the container of a kube-proxy Pod:
 
+```
 ➜ candidate@cka6016:~$ sudo -i
 
 ➜ root@cka6016:~# crictl ps | grep kube-proxy
@@ -3526,12 +3575,14 @@ Finally we will try to provoke events by killing the container belonging to the 
 
 ➜ root@cka6016:~# crictl ps | grep kube-proxy
 6bee4f36f8410       505d571f5fd56       5 seconds ago       Running             kube-proxy                0                   3455856e0970c       kube-proxy-wb4tb
+```
 ℹ️ In this environment crictl can be used for container management. In the real exam this could also be docker. Both commands can be used with the same arguments.
 
 We killed the container (2fd052f1fcf78), but also noticed that a new container (6bee4f36f8410) was directly created again. Thanks Kubernetes!
 
 Now we see if this caused events again and we write those into the second file:
 
+```bash
 ➜ candidate@cka6016:~$ sh /opt/course/15/cluster_events.sh
 Write the events caused by the killing into /opt/course/15/container_kill.log on cka6016:
 
@@ -3539,31 +3590,27 @@ Write the events caused by the killing into /opt/course/15/container_kill.log on
 kube-system   21s         Normal    Created             pod/kube-proxy-wb4tb                    Created container kube-proxy
 kube-system   21s         Normal    Started             pod/kube-proxy-wb4tb                    Started container kube-proxy
 default       90s         Normal    Starting            node/cka6016                            
-default       20s         Normal    Starting            node/cka6016         
+default       20s         Normal    Starting            node/cka6016
+```     
 Comparing the events we see that when we deleted the whole Pod there were more things to be done, hence more events. For example was the DaemonSet in the game to re-create the missing Pod. Where when we manually killed the main container of the Pod, the Pod still exists but only its container needed to be re-created, hence less events.
 
+---
  
 ## Question 16 | Namespaces and Api Resources
- 
 
-Solve this question on: ssh cka3200
+Write the names of all namespaced Kubernetes resources (like Pod, Secret, ConfigMap...) into `/opt/course/16/resources.txt`.
 
-Write the names of all namespaced Kubernetes resources (like Pod, Secret, ConfigMap...) into /opt/course/16/resources.txt.
+Find the `project-*` Namespace with the highest number of Roles defined in it and write its name and amount of Roles into `/opt/course/16/crowded-namespace.txt`.
 
-Find the project-* Namespace with the highest number of Roles defined in it and write its name and amount of Roles into /opt/course/16/crowded-namespace.txt.
-
-Answer:
+**Answer**:
 Namespace and Namespaces Resources
 We can get a list of all resources:
 
-k api-resources      # shows all
-
-k api-resources -h   # a bit of help is always good
-So we write them into the requested location:
-
+```bash
 ➜ ssh cka3200
 
 ➜ candidate@cka3200:~$ k api-resources --namespaced -o name > /opt/course/16/resources.txt
+```
 Which results in the file:
 
 # cka3200:/opt/course/16/resources.txt
@@ -3601,6 +3648,7 @@ csistoragecapacities.storage.k8s.io
  
 
 Namespace with most Roles
+```bash
 ➜ candidate@cka3200:~$ k -n project-jinan get role --no-headers | wc -l
 No resources found in project-jinan namespace.
 0
@@ -3617,10 +3665,12 @@ No resources found in project-jinan namespace.
 ➜ candidate@cka3200:~$ k -n project-toronto get role --no-headers | wc -l
 No resources found in project-toronto namespace.
 0
+```
 Finally we write the name and amount into the file:
-
+```
 # cka3200:/opt/course/16/crowded-namespace.txt
 project-miami with 300 roles
+```
  
 
  ---
@@ -3632,17 +3682,17 @@ Solve this question on: ssh cka6016
 
 There is Kustomize config available at `/opt/course/17/operator`. It installs an operator which works with different CRDs. It has been deployed like this:
 
-kubectl kustomize /opt/course/17/operator/prod | kubectl apply -f -
+kubectl kustomize `/opt/course/17/operator/prod | kubectl apply -f -`
 Perform the following changes in the Kustomize base config:
 
-The operator needs to list certain CRDs. Check the logs to find out which ones and adjust the permissions for Role operator-role
+The operator needs to list certain CRDs. Check the logs to find out which ones and adjust the permissions for Role `operator-role`
 
-Add a new Student resource called student4 with any name and description
+Add a new Student resource called `student4` with any name and description
 
 Deploy your Kustomize config changes to prod.
 
  
-Answer:
+**Answer**:
 Kustomize is a standalone tool to manage K8s Yaml files, but it also comes included with kubectl. The common idea is to have a base set of K8s Yaml and then override or extend it for different overlays, like done here for prod:
 
 ➜ ssh cka6016
@@ -3655,7 +3705,7 @@ base  prod
 
 Investigate Base
 Let's investigate the base first for better understanding:
-
+```
 ➜ candidate@cka6016:/opt/course/17/operator$ k kustomize base
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -3679,15 +3729,17 @@ metadata:
   name: operator
   namespace: NAMESPACE_REPLACE
 ...
-Running kubectl kustomize DIR will build the whole Yaml based on whatever is defined in the kustomization.yaml.
+```
+Running kubectl kustomize DIR will build the whole Yaml based on whatever is defined in the `kustomization.yaml`.
 
-In the case above we did build for the base directory, which produces Yaml that is not expected to be deployed just like that. We can see for example that all resources contain namespace: NAMESPACE_REPLACE entries which won't be possible to apply because Namespace names need to be lowercase.
+In the case above we did build for the base directory, which produces Yaml that is not expected to be deployed just like that. We can see for example that all resources contain `namespace: NAMESPACE_REPLACE` entries which won't be possible to apply because Namespace names need to be lowercase.
 
 But for debugging it can be useful to build the base Yaml.
 
  
 
 Investigate Prod
+```
 ➜ candidate@cka6016:/opt/course/17/operator$ k kustomize prod
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -3711,13 +3763,14 @@ metadata:
   name: operator
   namespace: operator-prod
 ...
-We can see that all resources now have namespace: operator-prod. Also prod adds the additional label project_id: prod_7768e94e-88da-4744-9135-f1e7fbb96daf to the Deployment. The rest is taken from base.
+```
+We can see that all resources now have `namespace: operator-prod`. Also prod adds the additional label `project_id: prod_7768e94e-88da-4744-9135-f1e7fbb96daf` to the Deployment. The rest is taken from base.
 
  
 
 Locate Issue
 The instructions tell us to check the logs:
-
+```
 ➜ candidate@cka6016:/opt/course/17/operator$ k -n operator-prod get pod
 NAME                        READY   STATUS    RESTARTS   AGE
 operator-7f4f58d4d9-v6ftw   1/1     Running   0          6m9s
@@ -3730,8 +3783,10 @@ Error from server (Forbidden): students.education.killer.sh is forbidden: User "
 Error from server (Forbidden): classes.education.killer.sh is forbidden: User "system:serviceaccount:operator-prod:operator" cannot list resource "classes" in API group "education.killer.sh" in the namespace "operator-prod"
 + sleep 10
 + true
+```
 We can see that the operator tries to list resources students and classes. If we look at the Deployment we can see that it simply runs kubectl commands in a loop:
 
+```
 # kubectl -n operator-prod edit deploy operator
 apiVersion: apps/v1
 kind: Deployment
@@ -3755,11 +3810,12 @@ spec:
               sleep 60
             done
 ...
- 
+ ```
 
 Adjust RBAC
 Now we need to adjust the existing Role operator-role. In the Kustomize config directory we find file rbac.yaml which we need to edit. Instead of manually editing the Yaml we could also generate it via command line:
 
+```
 ➜ candidate@cka6016:/opt/course/17/operator$ k -n operator-prod create role operator-role --verb list --resource student --resource class -oyaml --dry-run=client
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -3775,8 +3831,10 @@ rules:
   - classes
   verbs:
   - list
-Now we copy&paste it into rbac.yaml:
+```
+Now we copy&paste it into `rbac.yaml`:
 
+```
 ➜ candidate@cka6016:/opt/course/17/operator$ vim base/rbac.yaml
 # cka6016:/opt/course/17/operator/base/rbac.yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -3806,7 +3864,10 @@ roleRef:
   kind: Role
   name: operator-role
   apiGroup: rbac.authorization.k8s.io
+```
 And we deploy:
+
+```
 
 ➜ candidate@cka6016:/opt/course/17/operator$ kubectl kustomize /opt/course/17/operator/prod | kubectl apply -f -
 customresourcedefinition.apiextensions.k8s.io/classes.education.killer.sh unchanged
@@ -3819,8 +3880,11 @@ class.education.killer.sh/advanced unchanged
 student.education.killer.sh/student1 unchanged
 student.education.killer.sh/student2 unchanged
 student.education.killer.sh/student3 unchanged
+```
+
 We can see that only the Role was configured, which is what we want. And the logs are not throwing errors any more:
 
+```
 ➜ candidate@cka6016:/opt/course/17/operator$ k -n operator-prod logs operator-7f4f58d4d9-v6ftw
 + kubectl get students
 NAME       AGE
@@ -3830,11 +3894,12 @@ student3   22m
 + kubectl get classes
 NAME       AGE
 advanced   20m
- 
+ ```
 
 Create new Student resource
-Finally we need to create a new Student resource. Here we can simply copy an existing one in students.yaml:
+Finally we need to create a new Student resource. Here we can simply copy an existing one in `students.yaml`:
 
+```
 ➜ candidate@cka6016:/opt/course/17/operator$ vim base/students.yaml
 # cka6016:/opt/course/17/operator/base/students.yaml
 ...
@@ -3853,8 +3918,10 @@ metadata:
 spec:
   name: Some Name
   description: Some Description
+```
 And we deploy:
 
+```
 ➜ candidate@cka6016:/opt/course/17/operator$ kubectl kustomize /opt/course/17/operator/prod | kubectl apply -f -
 customresourcedefinition.apiextensions.k8s.io/classes.education.killer.sh unchanged
 customresourcedefinition.apiextensions.k8s.io/students.education.killer.sh unchanged
@@ -3874,5 +3941,6 @@ student1   28m
 student2   28m
 student3   27m
 student4   43s
+```
 Only Student student4 got created, everything else stayed the same.
 
