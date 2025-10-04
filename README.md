@@ -7,9 +7,9 @@ Prepare a Linux system for Kubernetes. Docker is already installed, but you need
 **Tasks:**
 
 - Install the `.deb` package
-- Install the Debian package —/cri-dockerd_O.3.9.3-O.ubuntu-jammy_amd64.deb
-- Debian packages are installed using dpkg.
-- Enable and start the cri-docker service
+- Install the Debian package `-/cri-dockerd_O.3.9.3-O.ubuntu-jammy_amd64.deb`
+- Debian packages are installed using `dpkg`.
+- Enable and start the `cri-docker` service
 - Set the following system parameters:
   - `net.bridge.bridge-nf-call-iptables=1`
   - `net.ipv6.conf.all.forwarding=1`
@@ -1884,10 +1884,10 @@ Solve this question on: ssh cka6016
 The Deployment controller in Namespace `lima-control` communicates with various cluster internal endpoints by using their DNS FQDN values.
 Update the ConfigMap used by the Deployment with the correct FQDN values for:
 
-- DNS_1: Service kubernetes in Namespace default
-- DNS_2: Headless Service department in Namespace lima-workload
-- DNS_3: Pod section100 in Namespace lima-workload. It should work even if the Pod IP changes
-- DNS_4: A Pod with IP 1.2.3.4 in Namespace kube-system
+- DNS_1: Service kubernetes in Namespace `default`
+- DNS_2: Headless Service department in Namespace `lima-workload`
+- DNS_3: Pod section100 in Namespace `lima-workload`. It should work even if the Pod IP changes
+- DNS_4: A Pod with IP `1.2.3.4` in Namespace `kube-system`
 
 Ensure the Deployment works with the updated values.
 
@@ -1927,7 +1927,7 @@ deployment.apps/controller restarted
 - Create a Static Pod named `my-static-pod` in Namespace `default` on the controlplane node. It should be of image `nginx:1-alpine` and have resource requests for `10m` CPU and `20Mi` memory.
 - Create a NodePort Service named `static-pod-service` which exposes that static Pod on port `80`.
 
-ℹ️ For verification check if the new Service has one Endpoint. It should also be possible to access the Pod via the cka2560 internal IP address, like using curl 192.168.100.31:NODE_PORT
+ℹ️ For verification check if the new Service has one Endpoint. It should also be possible to access the Pod via the `cka2560` internal IP address, like using `curl 192.168.100.31:NODE_PORT`
 
 Answer:
 
@@ -1961,7 +1961,7 @@ status: {}
 ```
 
 Now we expose that static Pod:
-```bash
+```yaml
 ➜ root@cka2560:~# k expose pod my-static-pod-cka2560 --name static-pod-service --type=NodePort --port 80
 This will generate a Service yaml like:
 
@@ -2028,20 +2028,17 @@ Commercial support is available at
 ---- 
 ## Question 3 | Kubelet client/server cert info
  
-
 Solve this question on: `ssh cka5248`
 
 Node `cka5248-node1` has been added to the cluster using kubeadm and TLS bootstrapping.
 
 Find the `Issuer` and `Extended Key Usage` values on `cka5248-node1` for:
-
 - Kubelet Client Certificate, the one used for outgoing connections to the `kube-apiserver`
 - Kubelet Server Certificate, the one used for incoming connections from the `kube-apiserver`
 
 Write the information into file `/opt/course/3/certificate-info.txt`.
 
 ℹ️ You can connect to the worker node using `ssh cka5248-node1` from `cka5248`
- 
 
 **Answer**:
 First we check the kubelet client certificate:
@@ -2199,9 +2196,7 @@ Look at these Pods working together!
 
 ## Question 5 | Kubectl sorting
  
-
-Solve this question on: ssh cka8448
-
+Solve this question on: `ssh cka8448`
 
 Create two bash script files which use kubectl sorting to:
 - Write a command into `/opt/course/5/find_pods.sh` which lists all Pods in all Namespaces sorted by their AGE `metadata.creationTimestamp`
@@ -2385,7 +2380,7 @@ ff3910e3c8c6c  ...  25 seconds ago    Running     kube-scheduler            ...
 9b49473786774  ...  25 seconds ago    Running     kube-apiserver            ...
 f5de1f6e11d5c  ...  26 seconds ago    Running     etcd                      ...
 ```
-ℹ️ In this environment crictl can be used for container management. In the real exam this could also be docker. Both commands can be used with the same arguments.
+ℹ️ In this environment `crictl` can be used for container management. In the real exam this could also be docker. Both commands can be used with the same arguments.
 
 Also the node should be available, give it a bit of time though:
 ```bash
@@ -2543,6 +2538,7 @@ Snapshot saved at /opt/course/7/etcd-snapshot.db
 
 We create a Pod in the cluster and wait for it to be running:
 
+```bash
 ➜ root@cka2560:~# kubectl run test --image=nginx
 pod/test created
 
@@ -2556,6 +2552,7 @@ Next we stop all controlplane components:
 ➜ root@cka2560:/etc/kubernetes/manifests# mv * ..
 
 ➜ root@cka2560:/etc/kubernetes/manifests# watch crictl ps
+```
 It's very important to wait for all K8s controlplane containers to be removed before continuing. This can take a minute!
 
 ℹ️ In this environment crictl can be used for container management. In the real exam this could also be docker. Both commands can be used with the same arguments.
@@ -2571,7 +2568,7 @@ Deprecated: Use `etcdutl snapshot restore` instead.
 2025-03-02T13:38:08Z    info    snapshot/v3_snapshot.go:293     restored snapshot       {"path": "/opt/course/7/etcd-snapshot.db", "wal-dir": "/var/lib/etcd-snapshot/member/wal", "data-dir": "/var/lib/etcd-snapshot", "snap-dir": "/var/lib/etcd-snapshot/member/snap", "initial-memory-map-size": 0}
 We could specify another host to make the backup from by using etcdctl --endpoints http://IP, but here we just use the default value which is: http://127.0.0.1:2379,http://127.0.0.1:4001.
 ```
-The restored files are located at the new folder /var/lib/etcd-snapshot, now we have to tell etcd to use that directory:
+The restored files are located at the new folder `/var/lib/etcd-snapshot`, now we have to tell etcd to use that directory:
 ```bash
 ➜ root@cka2560:~# vim /etc/kubernetes/etcd.yaml
 # /etc/kubernetes/etcd.yaml
@@ -2720,12 +2717,12 @@ You should be comfortable investigating a running cluster, know different method
 
 ## Question 9 | Kill Scheduler, Manual Scheduling
  
-Solve this question on: ssh cka5248
+Solve this question on: `ssh cka5248`
 
 Temporarily stop the kube-scheduler, this means in a way that you can start it again afterwards.
 - Create a single Pod named manual-schedule of image `httpd:2-alpine`, confirm it's created but not scheduled on any node.
-- Now you're the scheduler and have all its power, manually schedule that Pod on node cka5248. Make sure it's running.
-- Start the kube-scheduler again and confirm it's running correctly by creating a second Pod named `manual-schedule2` of image `httpd:2-alpine` and check if it's running on `cka5248-node1`.
+- Now you're the scheduler and have all its power, manually schedule that Pod on node `cka5248`. Make sure it's running.
+- Start the `kube-scheduler` again and confirm it's running correctly by creating a second Pod named `manual-schedule2` of image `httpd:2-alpine` and check if it's running on `cka5248-node1`.
 
 **Answer**:
 Stop the Scheduler
@@ -2760,7 +2757,6 @@ And it should be stopped, we can wait for the container to be removed with watch
 ➜ root@cka5248:/etc/kubernetes/manifests
 ```
 ℹ️ In this environment crictl can be used for container management. In the real exam this could also be docker. Both commands can be used with the same arguments.
-
  
 
 Create a Pod
@@ -2874,7 +2870,7 @@ First we can have a look at existing ones:
 NAME         PROVISIONER             RECLAIMPOLICY   VOLUMEBINDINGMODE       ...
 local-path   rancher.io/local-path   Delete          WaitForFirstConsumer    ...
 ```
-The local-path is the default one available if the Local Path Provisioner is installed. But we can see it has a reclaimPolicy of Delete. Still we could use this one as template for the one we need to create:
+The `local-path` is the default one available if the Local Path Provisioner is installed. But we can see it has a reclaimPolicy of Delete. Still we could use this one as template for the one we need to create:
 
 ```bash
 ➜ candidate@cka6016:~$ vim sc.yaml
@@ -3117,7 +3113,7 @@ secret/secret2 created
 Pod
 Now we create the Pod template:
 
-```bash
+```yaml
 ➜ candidate@cka2560:~$ k -n secret run secret-pod --image=busybox:1 --dry-run=client -o yaml -- sh -c "sleep 1d" > 11.yaml
 Then make the necessary changes:
 
@@ -3201,7 +3197,7 @@ Solve this question on: ssh cka5248
 - Create a Pod of image `httpd:2-alpine` in Namespace `default`.
 - The Pod should be named `pod1` and the container should be named `pod1-container`.
 - This Pod should only be scheduled on controlplane nodes.
-Do not add new labels to any nodes.
+- Do not add new labels to any nodes.
 
 **Answer**:
 First we find the controlplane node(s) and their taints:
@@ -3253,7 +3249,7 @@ spec:
     node-role.kubernetes.io/control-plane: ""  # add
 status: {}
 ```
-ℹ️ The nodeSelector specifies node-role.kubernetes.io/control-plane with no value because this is a key-only label and we want to match regardless of the value
+ℹ️ The nodeSelector specifies `node-role.kubernetes.io/control-plane` with no value because this is a key-only label and we want to match regardless of the value
 
 Important here to add the toleration for running on controlplane nodes, but also the nodeSelector to make sure it only runs on controlplane nodes. 
 
@@ -3412,13 +3408,14 @@ You're ask to find out following information about the cluster:
 - Which suffix will static pods have that run on cka8448?
 - Write your answers into file `/opt/course/14/cluster-info`, structured like this:
 
+```bash
  /opt/course/14/cluster-info
 1: [ANSWER]
 2: [ANSWER]
 3: [ANSWER]
 4: [ANSWER]
 5: [ANSWER]
- 
+ ```
 
 Answer:
 How many controlplane and worker nodes are available?
@@ -3474,8 +3471,8 @@ Which suffix will static pods have that run on cka8448?
 `The suffix is the node hostname with a leading hyphen.`
 
 
-Result
-The resulting /opt/course/14/cluster-info could look like:
+**Result**
+The resulting `/opt/course/14/cluster-info` could look like:
 
 ```bash
 # /opt/course/14/cluster-info
@@ -3550,7 +3547,7 @@ Now we can check the events, for example by using the command that we created be
 ```
 ➜ candidate@cka6016:~$ sh /opt/course/15/cluster_events.sh
 ```
-Write the events caused by the deletion into /opt/course/15/pod_kill.log on cka6016:
+Write the events caused by the deletion into `/opt/course/15/pod_kill.log` on cka6016:
 ```
 # cka6016:/opt/course/15/pod_kill.log
 kube-system   12s         Normal    Killing             pod/kube-proxy-lf2fs                    Stopping container kube-proxy
@@ -3566,7 +3563,7 @@ default       10s         Normal    Starting            node/cka6016
 ℹ️ Node cka6016 is already the controlplane and the only node of the cluster. Otherwise we might have to ssh onto the correct worker node where the Pod is running instead
 
  
-Finally we will try to provoke events by killing the container belonging to the container of a kube-proxy Pod:
+Finally we will try to provoke events by killing the container belonging to the container of a `kube-proxy` Pod:
 
 ```
 ➜ candidate@cka6016:~$ sudo -i
@@ -3701,13 +3698,14 @@ Deploy your Kustomize config changes to prod.
 **Answer**:
 Kustomize is a standalone tool to manage K8s Yaml files, but it also comes included with kubectl. The common idea is to have a base set of K8s Yaml and then override or extend it for different overlays, like done here for prod:
 
+```bash
 ➜ ssh cka6016
 
 ➜ candidate@cka6016:~$ cd /opt/course/17/operator
 
 ➜ candidate@cka6016:/opt/course/17/operator$ ls
 base  prod
- 
+```
 
 Investigate Base
 Let's investigate the base first for better understanding:
@@ -3948,5 +3946,5 @@ student2   28m
 student3   27m
 student4   43s
 ```
-Only Student student4 got created, everything else stayed the same.
+Only Student `student4` got created, everything else stayed the same.
 
