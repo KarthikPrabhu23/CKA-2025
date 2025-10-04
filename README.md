@@ -3296,12 +3296,15 @@ Using nodeAffinity still requires the toleration.
 Verify
 Now we create the Pod and and check if is scheduled:
 
+```bash
 ➜ candidate@cka5248:~$ k -f 12.yaml create
 pod/pod1 created
 
 ➜ candidate@cka5248:~$ k get pod pod1 -o wide
 NAME   READY   STATUS    ...   NODE      NOMINATED NODE   READINESS GATES
 pod1   1/1     Running   ...   cka5248   <none>           <none>
+```
+
 We can see the Pod is scheduled on the controlplane node.
 
  ---
