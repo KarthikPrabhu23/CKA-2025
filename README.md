@@ -1307,7 +1307,7 @@ The idea here is that we create a "Inter-pod anti-affinity" which allows us to s
 
 Let's begin by creating the Deployment template:
 
-```bash
+```yaml
 k -n project-tiger create deployment --image=nginx:1-alpine deploy-important --dry-run=client -o yaml > 12.yaml
 
 # cka2556:/home/candidate/12.yaml
@@ -1355,7 +1355,7 @@ Specify a topologyKey, which is a pre-populated Kubernetes label, you can find t
 ### TopologySpreadConstraints
 We can achieve the same with `topologySpreadConstraints`. Best to try out and play with both.
 
-```bash
+```yaml
 # cka2556:/home/candidate/12.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -1768,8 +1768,10 @@ And check the Service IP:
 NAME               TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
 check-ip-service   ClusterIP   10.109.84.110   <none>        80/TCP    13s
 kubernetes         ClusterIP   10.96.0.1       <none>        443/TCP   9d
+```
 Now we change the Service CIDR in the kube-apiserver manifest:
 
+```yaml
 ➜ candidate@cka9412:~$ sudo -i
 
 ➜ root@cka9412:~# vim /etc/kubernetes/manifests/kube-apiserver.yaml
@@ -3225,7 +3227,7 @@ Next we create the Pod yaml:
 
 Solution using NodeSelector
 Use the K8s docs and search for tolerations and nodeSelector to find examples, then update:
-```bash
+```yaml
 ➜ candidate@cka5248:~$ k run pod1 --image=httpd:2-alpine --dry-run=client -o yaml > 12.yaml
 
 # cka5248:/home/candidate/12.yaml
@@ -3319,7 +3321,7 @@ It should have a volume attached and mounted into each container. The volume sho
 
 **Answer**:
 First we create the Pod template:
-```bash
+```yaml
 ➜ ssh cka3200
 
 k run multi-container-playground --image=nginx:1-alpine --dry-run=client -o yaml > 13.yaml
@@ -3613,7 +3615,8 @@ We can get a list of all resources:
 ```
 Which results in the file:
 
-# cka3200:/opt/course/16/resources.txt
+```bash
+cka3200:/opt/course/16/resources.txt
 bindings
 configmaps
 endpoints
@@ -3645,7 +3648,7 @@ poddisruptionbudgets.policy
 rolebindings.rbac.authorization.k8s.io
 roles.rbac.authorization.k8s.io
 csistoragecapacities.storage.k8s.io
- 
+ ```
 
 Namespace with most Roles
 ```bash
@@ -3705,7 +3708,7 @@ base  prod
 
 Investigate Base
 Let's investigate the base first for better understanding:
-```
+```yaml
 ➜ candidate@cka6016:/opt/course/17/operator$ k kustomize base
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -3739,7 +3742,7 @@ But for debugging it can be useful to build the base Yaml.
  
 
 Investigate Prod
-```
+```yaml
 ➜ candidate@cka6016:/opt/course/17/operator$ k kustomize prod
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -3786,7 +3789,7 @@ Error from server (Forbidden): classes.education.killer.sh is forbidden: User "s
 ```
 We can see that the operator tries to list resources students and classes. If we look at the Deployment we can see that it simply runs kubectl commands in a loop:
 
-```
+```yaml
 # kubectl -n operator-prod edit deploy operator
 apiVersion: apps/v1
 kind: Deployment
@@ -3815,7 +3818,7 @@ spec:
 Adjust RBAC
 Now we need to adjust the existing Role operator-role. In the Kustomize config directory we find file rbac.yaml which we need to edit. Instead of manually editing the Yaml we could also generate it via command line:
 
-```
+```yaml
 ➜ candidate@cka6016:/opt/course/17/operator$ k -n operator-prod create role operator-role --verb list --resource student --resource class -oyaml --dry-run=client
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -3834,7 +3837,7 @@ rules:
 ```
 Now we copy&paste it into `rbac.yaml`:
 
-```
+```yaml
 ➜ candidate@cka6016:/opt/course/17/operator$ vim base/rbac.yaml
 # cka6016:/opt/course/17/operator/base/rbac.yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -3899,7 +3902,7 @@ advanced   20m
 Create new Student resource
 Finally we need to create a new Student resource. Here we can simply copy an existing one in `students.yaml`:
 
-```
+```yaml
 ➜ candidate@cka6016:/opt/course/17/operator$ vim base/students.yaml
 # cka6016:/opt/course/17/operator/base/students.yaml
 ...
