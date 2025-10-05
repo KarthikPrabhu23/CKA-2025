@@ -1296,7 +1296,10 @@ It was requested that the DaemonSet runs on all nodes, so we need to specify the
 
 ## 25. Deployment with Anti-Affinity and Multiple Containers
 
-Create a Deployment named `deploy-important` with 3 replicas. The Deployment and its Pods should have label `id=very-important`. First container named container1 with image nginx: I-alpine. Second container named container2 with image google/pause. There should only ever be one Pod of that Deployment running on one worker node, use topologyKey: kubernetes.io/hostname for this.
+Create a Deployment named `deploy-important` with 3 replicas. The Deployment and its Pods should have label `id=very-important`. 
+- First container named `container1` with image `nginx:1-alpine`.
+- Second container named `container2` with image `google/pause`.
+There should only ever be one Pod of that Deployment running on one worker node, use `topologyKey: kubernetes.io/hostname` for this.
 
 **Namespace:** `project-tiger`
 
@@ -1334,13 +1337,13 @@ spec:
 Create a Deployment named `deploy-important` with 3 replicas
 
 The Deployment and its Pods should have label `id=very-important`
-- First container named container1 with image `nginx:1-alpine`
-- Second container named container2 with image `google/pause`
+- First container named `container1` with image `nginx:1-alpine`
+- Second container named `container2` with image `google/pause`
 
 There should only ever be one Pod of that Deployment running on one worker node, use `topologyKey: kubernetes.io/hostname` for this
 ℹ️ Because there are two worker nodes and the Deployment has three replicas the result should be that the third Pod won't be scheduled. In a way this scenario simulates the behaviour of a DaemonSet, but using a Deployment with a fixed number of replicas
 
-Answer:
+**Answer**:
 There are two possible ways, one using `podAntiAffinity` and one using `topologySpreadConstraint`.
 
 ### PodAntiAffinity
@@ -1604,8 +1607,8 @@ openssl x509 -noout -text -in /etc/kubernetes/pki/etcd/server.crt | grep Validit
 
 # Look for client-cert-auth: true in etcd manifest
 ```
-Copy the “Validity – Not after” field into Solution file
-Client-cert YES TRUE
+Copy the “Validity – Not after” field into Solution file.
+- Client-cert `YES` TRUE
 
 ```bash
 # /opt/course/pl/etcd-info.txt
@@ -1624,8 +1627,8 @@ Store in:
 
 ## 30. Create StorageClass local-kiddie
 
-Create a new named local-kiddie with the provisioner rancher. io/local-path.
-- Set the volumeBindingMode to WaitForFirstConsumer
+Create a new named `local-kiddie` with the provisioner `rancher.io/local-path`.
+- Set the volumeBindingMode to `WaitForFirstConsumer`
 - Configure the StorageClass to default StorageClass
 - Do not modify any existing Deployment or PersistentVolumeClaim
 
@@ -1648,7 +1651,8 @@ Apply it with:
 kubectl apply -f storageclass.yaml
 ```
 
-make `storageclass.kubernetes.io/is-default-class: "false"` for the other StorageClass
+Make `storageclass.kubernetes.io/is-default-class: "false"` for the other StorageClass.
+
 Use patch
 `k patch sc local-kiddie -p '{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class:"true"}}}'`
 
@@ -1661,8 +1665,10 @@ The cluster configured by kubeadm has been migrated to a new machine. It require
 Task
 - Repair the single — node cluster damaged during machine migration.
 - First, identify the damaged cluster components and investigate the causes of their damage.
-Note: The decommissioned cluster uses an external etcd server. Next, repair the configuration of all damaged cluster components.
-Note: Ensure that all necessary services and components are restarted for the changes to take effect. Failure to do so may result in a score reduction. Finally, ensure the cluster is running normally. Ensure: Each node and all Pods are in the Ready state.
+- 
+**Note**: The decommissioned cluster uses an external etcd server. Next, repair the configuration of all damaged cluster components.
+  
+**Note**: Ensure that all necessary services and components are restarted for the changes to take effect. Failure to do so may result in a score reduction. Finally, ensure the cluster is running normally. Ensure: Each node and all Pods are in the Ready state.
 
 
 `K get pods` (Will not work)
@@ -1686,10 +1692,8 @@ Kube-scheduler will be failing
 Vim /etc/kubernetes/manifests/kube-scheduler.yaml
 ```
 
-Search for /resources 
-Reduce CPU request to 100m
-
----
+- Search for `/resources`
+- Reduce CPU request to `100m`
 
 ----
 
