@@ -632,7 +632,7 @@ Capacity:
 
 ---
 
-## 11. Least Permissive NetworkPolicy
+## 9. Least Permissive NetworkPolicy
 
 There are 2 deployments. Frontend in `frontend` namespace, Backend in `backend` namespace. Create a Network Policy to have interaction between frontend & backend deployments. 
 
@@ -663,7 +663,7 @@ spec:
       port: 8080 		// check the service
 ```
 
-## 12. Install CNI: Flannel vs Calico
+## 10. Install CNI: Flannel vs Calico
 
 ### i) **Calico: Network policy**
 Dont use `k apply -f`
@@ -708,7 +708,7 @@ curl -sL https://raw.githubusercontent.com/coreos/flannel/master/Documentation/k
 - The Daemonset will create new pods of flannel, and it'll work.
 
 --- 
-## 12. HPA with Autoscaling v2
+## 11. HPA with Autoscaling v2
 
 Create a new HorizontalPodAutoscaler [HPA] named `apache-server` in the `autoscale` namespace.
 
@@ -746,11 +746,11 @@ spec:
 ```
 
 
-## 13. Troubleshooting
+## 12. Troubleshooting
 
 _(Details not provided)_
 
-## 14. Expose Deployment via NodePort and Fix Port
+## 13. Expose Deployment via NodePort and Fix Port
 
 There is a deployment named `nodeport-deployment` in the relative namespace.
 Tasks:
@@ -800,7 +800,7 @@ spec:
 ```
 
 
-## 15. PriorityClass
+## 14. PriorityClass
 
 You're working in a Kubernetes cluster with an existing Deployment named `busybox-logger` running in a namespace called `priority`.
 The cluster already has at least one user-defined Priority Class
@@ -839,266 +839,7 @@ Add the below field in `spec.template.spec`
 ```
 ---
 
-## 19. Metrics Server Bash Scripts
-
-The metrics-server has been installed in the cluster. Write two bash scripts which use kubectl :
-- Script `/opt/course/7/node.sh` should show resource usage of Nodes
-- Script `/opt/course/7/pod.sh` should show resource usage of Pods and their containers
-
-**Tasks:**
-- Show node resource usage
-- Show pod resource usage with containers
-
-**Solution:**
-
-/opt/course/7/node.sh
-```bash
-#!/bin/bash
-kubectl top node
-```
-
-/opt/course/7/pod.sh
-```bash
-#!/bin/bash
-kubectl top pod --containers
-```
-
----
-
-## 20. Kubernetes Node Upgrade and Join
-
-**Tasks:**
-- Upgrade Kubernetes version on worker node `cka3962-node1`
-- Join node to cluster using `kubeadm`
-
-**Solution:**
-### Upgrade Node
-
-```bash
-controlplane:~$ k get nodes -o wide
-NAME           STATUS   ROLES           AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION     CONTAINER-RUNTIME
-controlplane   Ready    control-plane   25d   v1.34.1   172.30.1.2    <none>        Ubuntu 24.04.1 LTS   6.8.0-51-generic   containerd://1.7.27
-node01         Ready    <none>          25d   v1.33.2   172.30.2.2    <none>        Ubuntu 24.04.1 LTS   6.8.0-51-generic   containerd://1.7.27
-```
-      
-ssh node01
-
-Update the directory to point to the desired version
-`vim /etc/apt/sources.list.d/kubernetes.list`
-
-Search for kubeadm upgrade
-```bash
-sudo apt-mark unhold kubeadm && \
-sudo apt-get update && sudo apt-get install -y kubeadm='1.34.1-1.1' && \
-sudo apt-mark hold kubeadm
-```
-
-`sudo kubeadm upgrade plan`
-
-`sudo kubeadm upgrade apply v1.34.1`
-
-
-Upgrade kubelet and kubectl
-```bash
-sudo apt-mark unhold kubelet kubectl && \
-sudo apt-get update && sudo apt-get install -y kubelet='1.34.x-*' kubectl='1.34.x-*' && \
-sudo apt-mark hold kubelet kubectl
-```
-
-Restart the kubelet:
-```bash
-sudo systemctl daemon-reload
-sudo systemctl restart kubelet
-```
-
-
-### Join the node to the cluster:
-`ssh controlplane`
-
-```bash
-kubeadm token create --print-join-command
-```
-
-Copy the output and paste it after `ssh new-node`
-
-----
-
-## 21. Use ServiceAccount to Access Secrets via API
-
-There is ServiceAccount `secret-reader` in Namespace `project-swan`. Create a Pod of image `nginx:1-alpine` named `api-contact` which uses this ServiceAccount. Exec into the Pod and use curl to manually query all Secrets from the Kubernetes Api. Write the result into file `/opt/course/9/result.json`.
-
-**Tasks:**
-- Use ServiceAccount `secret-reader` in `project-swan`
-- Pod `api-contact` should query secrets and save to `/opt/course/9/result.json`
-
-**Solution:**
-
-```bash
-kubectl run api-contact --image=nginx:1-alpine -n project-swan --dry-run=client -o yaml > q9-pod.yaml
-
-# Add:
-spec: 
-  serviceAccountName: secret-reader
-
-kubectl apply -f q9-pod.yaml
-```
-
-```bash
-kubectl exec -it api-contact -n project-swan -it -- sh
-
-TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-
-curl -k https://kubernetes.defautt/api/vl/secrets -H "Authorization: Bearer ${TOKEN}"
-
-curt -k https://kubernetes.defautt/api/vl/secrets -H "Authorization: Bearer ${TOKEN}" > result.json
-
-exit
-
-# Now in control-plane node
-
-kubectl exec -it api-contact –n project-swan -- cat result.json > /opt/course/9/result.json
-```
-
-Connect via HTTPS with correct CA
-To connect without curl -k we can specify the CertificateAuthority (CA):
-
-```bash
-CACERT=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-
-curl --cacert ${CACERT} https://kubernetes.default/api/v1/secrets -H "Authorization: Bearer ${TOKEN}"
-```
----
-
-## 22. Create Role and RoleBinding for SA
-
-Create a new ServiceAccount `processor` in Namespace `project-hamster`. Create a Role and RoleBinding, both named processor as well. These should allow the new SA to only create Secrets and ConfigMaps in that Namespace.
-
-**Namespace:** `project-hamster`
-
-**Solution:**
-
-```bash
-K create sa processor -n project-hamster
-```
-Create a Role
-```bash
-kubectl create role processor --verb=create --resource=secret --resource=configmap -n project-hamster
-```
-
-It will create:
-```yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: processor
-  namespace: project-hamster
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  - configmaps
-  verbs:
-  - create
-```
-
-Create a `RoleBinding`
-```bash
-kubectl create role processor --verb=create --resource=secret --resource=configmap -n project-hamster
-```
-It will create:
-```yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: processor
-  namespace: project-hamster
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  - configmaps
-  verbs:
-  - create
-```
-
-Verify the work:
-```bash
-➜ candidate@cka3962:~$ k -n project-hamster auth can-i create secret --as system:serviceaccount:project-hamster:processor
-yes
-
-➜ candidate@cka3962:~$ k -n project-hamster auth can-i create configmap --as system:serviceaccount:project-hamster:processor
-yes
-
-➜ candidate@cka3962:~$ k -n project-hamster auth can-i create pod --as system:serviceaccount:project-hamster:processor
-no
-
-➜ candidate@cka3962:~$ k -n project-hamster auth can-i delete secret --as system:serviceaccount:project-hamster:processor
-no
-
-➜ candidate@cka3962:~$ k -n project-hamster auth can-i get configmap --as system:serviceaccount:project-hamster:processor
-no
-```
-
----
-
-## 24. DaemonSet with Resource Limits
-
-Use Namespace project-tiger for the following. Create a DaemonSet named `ds-important` with image `httpd:2-alpine` and labels `id=ds-important` and `uuid=18426aØbf59-4e1Ø-923f-cØeØ78e82462`. The Pods it creates should request `10 millicore cpu` and `10 mebibyte memory`. The Pods of that DaemonSet should run on all nodes, also controlplanes.
-
-**Namespace:** `project-tiger`
-
-**Solution:**
-
-```bash
-k create deployment ds-important --image=httpd:2.4-alpine -n project-tiger --dry-run=client -o yaml > 11.yaml
-```
-
-Replace `Deployment` with `DaemonSet`
-
-```yaml
-apiVersion: apps/v1
-kind: DaemonSet                                     # change from Deployment to Daemonset
-metadata:
-  creationTimestamp: null
-  labels:                                           # add
-    id: ds-important                                # add
-    uuid: 18426a0b-5f59-4e10-923f-c0e078e82462      # add
-  name: ds-important
-  namespace: project-tiger                          # important
-spec:
-  #replicas: 1                                      # remove
-  selector:
-    matchLabels:
-      id: ds-important                              # add
-      uuid: 18426a0b-5f59-4e10-923f-c0e078e82462    # add
-  #strategy: {}                                     # remove
-  template:
-    metadata:
-      creationTimestamp: null
-      labels:
-        id: ds-important                            # add
-        uuid: 18426a0b-5f59-4e10-923f-c0e078e82462  # add
-    spec:
-      containers:
-      - image: httpd:2-alpine
-        name: ds-important
-        resources:
-          requests:                                 # add
-            cpu: 10m                                # add
-            memory: 10Mi                            # add
-      tolerations:                                  # add
-      - effect: NoSchedule                          # add
-        key: node-role.kubernetes.io/control-plane  # add
-#status: {}  
-```
-
-It was requested that the DaemonSet runs on all nodes, so we need to specify the toleration for this.
-
----
-
-## 25. Deployment with Anti-Affinity and Multiple Containers
+## 15. Deployment with Anti-Affinity and Multiple Containers
 
 Create a Deployment named `deploy-important` with 3 replicas. The Deployment and its Pods should have label `id=very-important`. 
 - First container named `container1` with image `nginx:1-alpine`.
@@ -1261,128 +1002,8 @@ Or our topologySpreadConstraints reason didn't match pod topology spread constra
 
 Warning  FailedScheduling  20s (x2 over 22s)  default-scheduler  0/3 nodes are available: 1 node(s) had untolerated taint {node-role.kubernetes.io/control-plane: }, 2 node(s) didn't match pod topology spread constraints. preemption: 0/3 nodes are available: 1 Preemption is not helpful for scheduling, 2 No preemption victims found for incoming pod.
  ```
- 
----
 
-## 26. Check and Renew kube-apiserver Certificate
-
-Check how long the kube-apiserver server certificate is valid using openssl or cfssl. 
-- Write the expiration date into `/opt/course/14/expiration`. Run the kubeadm command to list the expiration dates and confirm both methods show the same one.
-- Write the kubeadm command that would renew the `kube-apiserver` certificate into `/opt/course/14/kubeadm-renew-certs.sh`
-
-**Solution:**
-
-```bash
-openssl x509 -noout -text -in /etc/kubernetes/pki/apiserver.crt 
-
-Check for “Validity: Not after” field
-```
-
-```bash
-openssl x509 -noout -text -in /etc/kubernetes/pki/apiserver.crt | grep Validity -A2
->>>     Validity
-            Not Before: Oct 29 14:14:27 2024 GMT
-            Not After : Oct 29 14:19:27 2025 GMT
-```
-
-Store expiration in:
-
-```bash
-# /opt/course/14/expiration
-Oct 29 14:19:27 2025 GMT
-```
-
-Store renew command in: `/opt/course/14/kubeadm-renew-certs.sh`
-
-```bash
-# /opt/course/14/kubeadm-renew-certs.sh
-kubeadm certs renew apiserver
-```
-
----
-
-## 27. CoreDNS Update for custom-domain
-
-The CoreDNS configuration in the cluster needs to be updated,
-- Make a backup of the existing configuration Yaml and store it at `/opt/course/16/coredns_backup.yml`. You should be able to fast recover from the backup
-- Update the CoreDNS configuration in the cluster so that DNS resolution for `SERVICE.NAMESPACE.custom-domain` will work exactly like and in addition to `SERVICE.NAMESPACE.cluster.local`
-Test your configuration for example from a Pod with `busybox:1-image`. These commands should result in an address:
-```bash
-nslookup kubernetes.default.svc.cluster.local
-nslookup kubernetes.default.svc.custom-domain
-```
-
-**Solution:**
-
-```bash
-kubectl get cm coredns -n kube-system -o yaml > /opt/course/16/coredns_backup.yaml
-
-kubectl edit cm coredns -n kube-system
-```
-
-Update `data.Corefile`:
-add `custom-domain`
-```bash
-kubernetes custom-domain cluster.local in-addr.arpa ip6.arpa {
-  pods insecure
-  fallthrough in-addr.arpa ip6.arpa
-  ttl 30
-}
-```
-
-Restart:
-
-```bash
-kubectl rollout restart deployment coredns -n kube-system
-```
-
-Verify:
-- Run both the `nslookup` commands from the question.
-
----
-
-## 28. Crictl Container Info and Logs
-
-Solve this question on: Namespace project-tiger create a Pod named `tigers-reunite` of image `httpd:2-alpine` with labels `pod=container` and `container=pod`. Find out on which node the Pod is scheduled. SSH into that node and find the containerd container belonging to that Pod.
-
-**Tasks:**
-- Find `container ID` and `runtimeType`
-- Write the ID of the container and the `info.runtimeType` into `/opt/course/17/pod-container.txt`
-- Write the logs of the container into `/opt/course/17/pod-container.log`
-
-ℹ️ You can connect to a worker node using `ssh cka2556-node1` or `ssh cka2556-node2` from `cka2556`
-
-
-**Solution:**
-
-```bash
-
-ssh cka2556
-kubectl run tigers-reunite --image=httpd:2-alpine -n project-tiger --labels="pod=container,container=pod"
-
-```
-Find the node where `tigers-reunite` is scheduled on
-`k get pod -o wide -n project-tiger`
-
-```bash
-# Find node it's running on, SSH there:
-ssh <node-name>
-
-sudo -i
-
-crictl ps | grep tigers-reunite
-
-crictl inspect <containerID> | grep runtimeType > /opt/course/17/pod-container.txt
-
-
-sudo -i
-
-crictl logs <containerID> > /opt/course/17/pod-container.log
-```
-
----
-
-## 29. ETCD Info Extraction
+## 16. ETCD Info Extraction
 
 The cluster admin asked you to find out the following formation about etcd running on `cka9412` :
 - Server private key location
@@ -1429,7 +1050,7 @@ Store in:
 
 ---
 
-## 30. Create StorageClass local-kiddie
+## 17. Create StorageClass local-kiddie
 
 Create a new named `local-kiddie` with the provisioner `rancher.io/local-path`.
 - Set the volumeBindingMode to `WaitForFirstConsumer`
@@ -1462,9 +1083,8 @@ Use patch
 
 ----
 
-## 31. ETCD Repair
+## 18. ETCD Repair
 
-15. etcd Repair
 The cluster configured by kubeadm has been migrated to a new machine. It requires configuration changes to run successfully.
 Task
 - Repair the single — node cluster damaged during machine migration.
@@ -1501,7 +1121,7 @@ Vim /etc/kubernetes/manifests/kube-scheduler.yaml
 
 ----
 
-## 33. Kube Proxy IP tables
+## 19. Kube Proxy IP tables
 
 You're asked to confirm that kube-proxy is running correctly. For this perform the following in Namespace `project-hamster`:
 - Create Pod `p2-pod` with image `nginx:1-alpine`
@@ -1583,7 +1203,7 @@ Kubernetes Services are implemented using iptables rules (with default config) o
  ```
 ----- 
 
-## 34. Change Service CIDR
+## 20. Change Service CIDR
  
 - Create a Pod named `check-ip` in Namespace `default` using image `httpd:2-alpine`
 - Expose it on port `80` as a ClusterIP Service named `check-ip-service`. Remember to output the IP of that Service
@@ -1929,8 +1549,454 @@ Notice that the ConfogMap still exists. Delete them manually
 ```bash
 k delete cm horizontal-scaling-cm -n api-gateway
 ```
+---
+
+## Question 7 | Metrics Server - Node and Pod Resource Usage
+
+The metrics-server has been installed in the cluster. Write two bash scripts which use kubectl :
+- Script `/opt/course/7/node.sh` should show resource usage of Nodes
+- Script `/opt/course/7/pod.sh` should show resource usage of Pods and their containers
+
+**Tasks:**
+- Show node resource usage
+- Show pod resource usage with containers
+
+**Solution:**
+
+/opt/course/7/node.sh
+```bash
+#!/bin/bash
+kubectl top node
+```
+
+/opt/course/7/pod.sh
+```bash
+#!/bin/bash
+kubectl top pod --containers
+```
+
+---
+
+## Question 8 | Update Kubernetes Version and join cluster
+
+**Tasks:**
+- Upgrade Kubernetes version on worker node `cka3962-node1`
+- Join node to cluster using `kubeadm`
+
+**Solution:**
+### Upgrade Node
+
+```bash
+controlplane:~$ k get nodes -o wide
+NAME           STATUS   ROLES           AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION     CONTAINER-RUNTIME
+controlplane   Ready    control-plane   25d   v1.34.1   172.30.1.2    <none>        Ubuntu 24.04.1 LTS   6.8.0-51-generic   containerd://1.7.27
+node01         Ready    <none>          25d   v1.33.2   172.30.2.2    <none>        Ubuntu 24.04.1 LTS   6.8.0-51-generic   containerd://1.7.27
+```
+      
+ssh node01
+
+Update the directory to point to the desired version
+`vim /etc/apt/sources.list.d/kubernetes.list`
+
+Search for kubeadm upgrade
+```bash
+sudo apt-mark unhold kubeadm && \
+sudo apt-get update && sudo apt-get install -y kubeadm='1.34.1-1.1' && \
+sudo apt-mark hold kubeadm
+```
+
+`sudo kubeadm upgrade plan`
+
+`sudo kubeadm upgrade apply v1.34.1`
 
 
+Upgrade kubelet and kubectl
+```bash
+sudo apt-mark unhold kubelet kubectl && \
+sudo apt-get update && sudo apt-get install -y kubelet='1.34.x-*' kubectl='1.34.x-*' && \
+sudo apt-mark hold kubelet kubectl
+```
+
+Restart the kubelet:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart kubelet
+```
+
+
+### Join the node to the cluster:
+`ssh controlplane`
+
+```bash
+kubeadm token create --print-join-command
+```
+
+Copy the output and paste it after `ssh new-node`
+
+----
+
+## Question 9 | ServiceAccount to Access Secrets via API | Contact K8s Api from inside Pod
+
+There is ServiceAccount `secret-reader` in Namespace `project-swan`. Create a Pod of image `nginx:1-alpine` named `api-contact` which uses this ServiceAccount. Exec into the Pod and use curl to manually query all Secrets from the Kubernetes Api. Write the result into file `/opt/course/9/result.json`.
+
+**Tasks:**
+- Use ServiceAccount `secret-reader` in `project-swan`
+- Pod `api-contact` should query secrets and save to `/opt/course/9/result.json`
+
+**Solution:**
+
+```bash
+kubectl run api-contact --image=nginx:1-alpine -n project-swan --dry-run=client -o yaml > q9-pod.yaml
+
+# Add:
+spec: 
+  serviceAccountName: secret-reader
+
+kubectl apply -f q9-pod.yaml
+```
+
+```bash
+kubectl exec -it api-contact -n project-swan -it -- sh
+
+TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+
+curl -k https://kubernetes.defautt/api/vl/secrets -H "Authorization: Bearer ${TOKEN}"
+
+curt -k https://kubernetes.defautt/api/vl/secrets -H "Authorization: Bearer ${TOKEN}" > result.json
+
+exit
+
+# Now in control-plane node
+
+kubectl exec -it api-contact –n project-swan -- cat result.json > /opt/course/9/result.json
+```
+
+Connect via HTTPS with correct CA
+To connect without curl -k we can specify the CertificateAuthority (CA):
+
+```bash
+CACERT=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+
+curl --cacert ${CACERT} https://kubernetes.default/api/v1/secrets -H "Authorization: Bearer ${TOKEN}"
+```
+---
+
+## Question 10 | RBAC ServiceAccount Role RoleBinding
+
+Create a new ServiceAccount `processor` in Namespace `project-hamster`. Create a Role and RoleBinding, both named processor as well. These should allow the new SA to only create Secrets and ConfigMaps in that Namespace.
+
+**Namespace:** `project-hamster`
+
+**Solution:**
+
+```bash
+K create sa processor -n project-hamster
+```
+Create a Role
+```bash
+kubectl create role processor --verb=create --resource=secret --resource=configmap -n project-hamster
+```
+
+It will create:
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: processor
+  namespace: project-hamster
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  - configmaps
+  verbs:
+  - create
+```
+
+Create a `RoleBinding`
+```bash
+kubectl create role processor --verb=create --resource=secret --resource=configmap -n project-hamster
+```
+It will create:
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: processor
+  namespace: project-hamster
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  - configmaps
+  verbs:
+  - create
+```
+
+Verify the work:
+```bash
+➜ candidate@cka3962:~$ k -n project-hamster auth can-i create secret --as system:serviceaccount:project-hamster:processor
+yes
+
+➜ candidate@cka3962:~$ k -n project-hamster auth can-i create configmap --as system:serviceaccount:project-hamster:processor
+yes
+
+➜ candidate@cka3962:~$ k -n project-hamster auth can-i create pod --as system:serviceaccount:project-hamster:processor
+no
+
+➜ candidate@cka3962:~$ k -n project-hamster auth can-i delete secret --as system:serviceaccount:project-hamster:processor
+no
+
+➜ candidate@cka3962:~$ k -n project-hamster auth can-i get configmap --as system:serviceaccount:project-hamster:processor
+no
+```
+
+---
+
+## Question 11 |  DaemonSet on all Nodes with Resource Limits
+
+Use Namespace project-tiger for the following. Create a DaemonSet named `ds-important` with image `httpd:2-alpine` and labels `id=ds-important` and `uuid=18426aØbf59-4e1Ø-923f-cØeØ78e82462`. The Pods it creates should request `10 millicore cpu` and `10 mebibyte memory`. The Pods of that DaemonSet should run on all nodes, also controlplanes.
+
+**Namespace:** `project-tiger`
+
+**Solution:**
+
+```bash
+k create deployment ds-important --image=httpd:2.4-alpine -n project-tiger --dry-run=client -o yaml > 11.yaml
+```
+
+Replace `Deployment` with `DaemonSet`
+
+```yaml
+apiVersion: apps/v1
+kind: DaemonSet                                     # change from Deployment to Daemonset
+metadata:
+  creationTimestamp: null
+  labels:                                           # add
+    id: ds-important                                # add
+    uuid: 18426a0b-5f59-4e10-923f-c0e078e82462      # add
+  name: ds-important
+  namespace: project-tiger                          # important
+spec:
+  #replicas: 1                                      # remove
+  selector:
+    matchLabels:
+      id: ds-important                              # add
+      uuid: 18426a0b-5f59-4e10-923f-c0e078e82462    # add
+  #strategy: {}                                     # remove
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        id: ds-important                            # add
+        uuid: 18426a0b-5f59-4e10-923f-c0e078e82462  # add
+    spec:
+      containers:
+      - image: httpd:2-alpine
+        name: ds-important
+        resources:
+          requests:                                 # add
+            cpu: 10m                                # add
+            memory: 10Mi                            # add
+      tolerations:                                  # add
+      - effect: NoSchedule                          # add
+        key: node-role.kubernetes.io/control-plane  # add
+#status: {}  
+```
+
+It was requested that the DaemonSet runs on all nodes, so we need to specify the toleration for this.
+
+---
+
+## Question 14 | Check how long certificates are valid
+
+Check how long the kube-apiserver server certificate is valid using openssl or cfssl. 
+- Write the expiration date into `/opt/course/14/expiration`. Run the kubeadm command to list the expiration dates and confirm both methods show the same one.
+- Write the kubeadm command that would renew the `kube-apiserver` certificate into `/opt/course/14/kubeadm-renew-certs.sh`
+
+**Solution:**
+
+```bash
+openssl x509 -noout -text -in /etc/kubernetes/pki/apiserver.crt 
+
+Check for “Validity: Not after” field
+```
+
+```bash
+openssl x509 -noout -text -in /etc/kubernetes/pki/apiserver.crt | grep Validity -A2
+>>>     Validity
+            Not Before: Oct 29 14:14:27 2024 GMT
+            Not After : Oct 29 14:19:27 2025 GMT
+```
+
+Store expiration in:
+
+```bash
+# /opt/course/14/expiration
+Oct 29 14:19:27 2025 GMT
+```
+
+Store renew command in: `/opt/course/14/kubeadm-renew-certs.sh`
+
+```bash
+# /opt/course/14/kubeadm-renew-certs.sh
+kubeadm certs renew apiserver
+```
+
+---
+## Question 15 | NetworkPolicy
+
+There was a security incident where an intruder was able to access the whole cluster from a single hacked backend _Pod_.
+
+To prevent this create a _NetworkPolicy_ called `np-backend` in _Namespace_ `project-snake`. It should allow the `backend-*` _Pods_ only to:
+-   Connect to `db1-*` _Pods_ on port `1111`
+-   Connect to `db2-*` _Pods_ on port `2222`
+
+Use the `app` _Pod_ labels in your policy.
+
+- ℹ️ All _Pods_ in the _Namespace_ run plain Nginx images. This allows simple connectivity tests like: `k -n project-snake exec POD_NAME -- curl POD_IP:PORT`
+
+- ℹ️ For example, connections from `backend-*` _Pods_ to `vault-*` _Pods_ on port `3333` should no longer work
+
+**Solution**:
+
+```bash
+➜ candidate@cka7968:~$ k -n project-snake get pod -L app
+NAME        READY   STATUS    RESTARTS   AGE   APP
+backend-0   1/1     Running   0          8d    backend
+db1-0       1/1     Running   0          8d    db1
+db2-0       1/1     Running   0          8d    db2
+vault-0     1/1     Running   0          8d    vault
+```
+
+Copy NP.yaml from Documentation
+```yaml
+# cka7968:/home/candidate/15_np.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: np-backend
+  namespace: project-snake
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  policyTypes:
+    - Egress                    # policy is only about Egress
+  egress:
+    -                           # first rule
+      to:                           # first condition "to"
+      - podSelector:
+          matchLabels:
+            app: db1
+      ports:                        # second condition "port"
+      - protocol: TCP
+        port: 1111
+    -                           # second rule
+      to:                           # first condition "to"
+      - podSelector:
+          matchLabels:
+            app: db2
+      ports:                        # second condition "port"
+      - protocol: TCP
+        port: 2222
+```
+
+`k create -f np.yaml`
+
+The NP above has two rules with two conditions each, it can be read as:
+```bash
+allow outgoing traffic if:
+  (destination pod has label app=db1 AND port is 1111)
+  OR
+  (destination pod has label app=db2 AND port is 2222)
+```
+
+---
+
+## Question 16 | Update CoreDNS Configuration
+
+The CoreDNS configuration in the cluster needs to be updated,
+- Make a backup of the existing configuration Yaml and store it at `/opt/course/16/coredns_backup.yml`. You should be able to fast recover from the backup
+- Update the CoreDNS configuration in the cluster so that DNS resolution for `SERVICE.NAMESPACE.custom-domain` will work exactly like and in addition to `SERVICE.NAMESPACE.cluster.local`
+Test your configuration for example from a Pod with `busybox:1-image`. These commands should result in an address:
+```bash
+nslookup kubernetes.default.svc.cluster.local
+nslookup kubernetes.default.svc.custom-domain
+```
+
+**Solution:**
+
+```bash
+kubectl get cm coredns -n kube-system -o yaml > /opt/course/16/coredns_backup.yaml
+
+kubectl edit cm coredns -n kube-system
+```
+
+Update `data.Corefile`:
+add `custom-domain`
+```bash
+kubernetes custom-domain cluster.local in-addr.arpa ip6.arpa {
+  pods insecure
+  fallthrough in-addr.arpa ip6.arpa
+  ttl 30
+}
+```
+
+Restart:
+
+```bash
+kubectl rollout restart deployment coredns -n kube-system
+```
+
+Verify:
+- Run both the `nslookup` commands from the question.
+
+---
+
+## Question 17 | Find Container of Pod and check info
+
+Solve this question on: Namespace project-tiger create a Pod named `tigers-reunite` of image `httpd:2-alpine` with labels `pod=container` and `container=pod`. Find out on which node the Pod is scheduled. SSH into that node and find the containerd container belonging to that Pod.
+
+**Tasks:**
+- Find `container ID` and `runtimeType`
+- Write the ID of the container and the `info.runtimeType` into `/opt/course/17/pod-container.txt`
+- Write the logs of the container into `/opt/course/17/pod-container.log`
+
+ℹ️ You can connect to a worker node using `ssh cka2556-node1` or `ssh cka2556-node2` from `cka2556`
+
+
+**Solution:**
+
+```bash
+
+ssh cka2556
+kubectl run tigers-reunite --image=httpd:2-alpine -n project-tiger --labels="pod=container,container=pod"
+
+```
+Find the node where `tigers-reunite` is scheduled on
+`k get pod -o wide -n project-tiger`
+
+```bash
+# Find node it's running on, SSH there:
+ssh <node-name>
+
+sudo -i
+
+crictl ps | grep tigers-reunite
+
+crictl inspect <containerID> | grep runtimeType > /opt/course/17/pod-container.txt
+
+
+sudo -i
+
+crictl logs <containerID> > /opt/course/17/pod-container.log
+```
+
+---
+  
 ----
 # Mock Test - 2
 
