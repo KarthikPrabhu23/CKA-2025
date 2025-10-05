@@ -457,18 +457,18 @@ You should now see the sidecar container tailing `/var/log/neokloud.log`.
 
 ## 7. PVC + Mount to Deployment
 
-**Tasks:**
-- Create a PVC
-- Mount it inside existing Deployment
-
 A Persistent Volume already exists and is retained for reuse.
 
-
-Create a PVC named `MariaDB` in the mariadb namespace as follows
+Create a PVC named `MariaDB` in the `mariadb` namespace as follows
 - Access mode `ReadWriteOnce`
 - Storage capacity `250Mi`
 
-Edit the `maria-deployment` in the file located at `maria-deploy.yaml` to use the newly created PVC.
+**Solution:**
+
+**Tasks:**
+- Create a PVC
+- Mount it inside existing Deployment
+- Edit the `maria-deployment` in the file located at `maria-deploy.yaml` to use the newly created PVC.
 
 Verify that the deployment is running and is stable.
 
@@ -497,21 +497,12 @@ Add the PVC Claim name under `spec.template.spec.volumes.persistentVolumeClaim.c
 
 ## 8. ArgoCD Install with Helm (No CRDs)
 
-```bash
-helm repo add argo https://github.com/argoproj/argo-helm
-
-helm template argocd argo/argo-cd --version 5.51.6 \ --namespace argo
-  --set crds.install=false > argocd.yaml
-  
-kubectl apply -f argocd.yaml
-```
-
-OR 
-
 Step 1: Add Helm Repo
 ```bash
 helm repo add argo https://argoproj.github.io/argo-helm
 helm repo update
+
+kubectl create namespace argocd
 ```
 Step 2: Render the Argo CD Manifest
 ```
@@ -522,7 +513,6 @@ helm template argo-cd argo/argo-cd \
 ```
 Step 3: Apply to Cluster
 ```bash
-kubectl create namespace argocd
 kubectl apply -f argo-template.yaml
 ```
 
@@ -539,8 +529,9 @@ Step 4: Verify Argo CD Pods
 kubectl get pods -n argocd
 ```
 
-## 10. Divide Node Resources (With Init Containers)
+## 9. Divide Node Resources (With Init Containers)
 
+### Solution 1:
 ```bash
 K scale deploy wordpress --replicas=0
 
@@ -589,7 +580,8 @@ containers:
 k scale deploy wordpress --replicas=3
 ```
 
----
+### Solution 2:
+
 `k describe node | grep -A5 "Allocatable"`
 
 Calculation Breakdown:
@@ -616,12 +608,14 @@ k scale deployment wordpress -n namespace --replicas=0
 k edit deployment wordpress
 ```
 
-Edit inside both the containers
-Edit in `spec.template.spec.containers.resources.requests`
+The calculation values are the `requests`. Limits should be declared slightly higher.
+
+- Edit inside both the containers.
+- Edit in `spec.template.spec.containers.resources.requests`
 
 
 ```bash
-controlplane:~$ kubectl describe node I grep -A5 "Allocatable"
+controlplane:~$ kubectl describe node | grep -A5 "Allocatable"
 Capacity:
 	cpu: 1
 	ephemeral-storage: 19221248Ki
@@ -632,7 +626,7 @@ Capacity:
 
 ---
 
-## 9. Least Permissive NetworkPolicy
+## 10. Least Permissive NetworkPolicy
 
 There are 2 deployments. Frontend in `frontend` namespace, Backend in `backend` namespace. Create a Network Policy to have interaction between frontend & backend deployments. 
 
@@ -662,8 +656,9 @@ spec:
     - protocol: TCP
       port: 8080 		// check the service
 ```
+---
 
-## 10. Install CNI: Flannel vs Calico
+## 11. Install CNI: Flannel vs Calico
 
 ### i) **Calico: Network policy**
 Dont use `k apply -f`
@@ -708,14 +703,14 @@ curl -sL https://raw.githubusercontent.com/coreos/flannel/master/Documentation/k
 - The Daemonset will create new pods of flannel, and it'll work.
 
 --- 
-## 11. HPA with Autoscaling v2
+## 12. HPA with Autoscaling v2
 
 Create a new HorizontalPodAutoscaler [HPA] named `apache-server` in the `autoscale` namespace.
 
 **Tasks** :
 - This HPA must target the existing deployment called `apache-deployment` in the namespace.
 - Set the HPA to target for CPU usage per Pod.
-- Configure the HPA to have a minimum of 1 pod and maximum of 4 pods.
+- Configure the HPA to have a minimum of `1` pod and maximum of `4` pods.
 - Have to set the downscale stabilization window to 30 seconds.
 
 Copy the 3rd `hpa.yaml` from the documentation
@@ -744,25 +739,29 @@ spec:
     scaleDown:
       stabilizationWindowSeconds: 30
 ```
-
+---
 
 ## 12. Troubleshooting
 
 _(Details not provided)_
 
+---
+
 ## 13. Expose Deployment via NodePort and Fix Port
 
 There is a deployment named `nodeport-deployment` in the relative namespace.
 Tasks:
-- Configure the deployment so it can be exposed using port `80` and protocol `TCP` name http.
-- Create a new service named `nodeport-service` exposing the container port 80 and TCP
+- Configure the deployment so it can be exposed using port `80` and protocol `TCP` name `http`.
+- Create a new service named `nodeport-service` exposing the container port `80` and TCP
 - Configure the new Service to also expose the individual pods using Nodeport.
 
 **Tasks:**
 - Edit deployment to expose container port 80
 - Create NodePort service using same label
 
-K edit deploy
+**Solution:**
+
+`K edit deploy`
 
 Inside `spec.template.spec.containers`
 
@@ -798,7 +797,7 @@ spec:
     targetPort: 80
     nodePort: 30080
 ```
-
+---
 
 ## 14. PriorityClass
 
@@ -808,6 +807,8 @@ The cluster already has at least one user-defined Priority Class
 Perform the following tasks:
 1. Create a new Priority Class named `high-priority` for user workloads. The value of this Priority Class should be exactly one less than the highest existing user-defined Priority Class value.
 2. Patch the existing Deployment `busybox-logger` in the `priority` namespace to use the newly created `high-priority` Priority Class.
+
+**Solution:**
 
 Get `PC.yaml` from documentation
 
@@ -823,11 +824,15 @@ metadata:
 value: 100000
 globalDefault: false
 ```
+
+Patch the deploy with new `PriorityClass`
 ```bash
 kubectl patch deploy -n priority busybox-logger -p '{"spec":{"template":{"spec":{"priorityClassName":"high-priority"}}}}'
 deployment.apps/busybox-logger patched
 ```
-OR edit the deployment:-
+OR
+
+Edit the deployment:-
 
 In Deployment:
 `k edit deploy `
@@ -877,7 +882,7 @@ spec:
                 - very-important
             topologyKey: "kubernetes.io/hostname"
 ```
-## 25. Deployment on all Nodes - Anti-affinity 
+## 15. Deployment on all Nodes - Anti-affinity 
  
 Create a Deployment named `deploy-important` with 3 replicas
 
