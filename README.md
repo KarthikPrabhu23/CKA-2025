@@ -50,27 +50,26 @@ net.netfilter.nf_conntrack_max=131072
 sudo sysctl --system
 ```
 
-Verify the changes with `sudo sysctl -p`
-Troubleshoot:
-If the parameter value keeps changing after apply,
-Try to load your file at the last, name it with a high number:
+Verify the changes with `sudo sysctl -p`.
 
-`/etc/sysctl.d/99-zcka.conf`
+Troubleshoot:
+- If the parameter value keeps changing after apply,
+- Try to load your file at the last, rename file with a high number: `/etc/sysctl.d/99-zcka.conf`
 
 OR
-To search for the file inside /etc/sysctl.d/ that contains the string net.ipv4.ip_forward, run:
+To search for the file inside `/etc/sysctl.d/` that contains the string `net.ipv4.ip_forward`, run:
 ```
 grep -rl "net.ipv4.ip_forward" /etc/sysctl.d/ /usr/lib/sysctl.d/ /etc/sysctl.conf
 ```
 
 ## 2. Verify cert-manager CRD
 
-Create a list of all cert-manager Custom Resource Definitions (CRDs) and save it to `~/resources.yaml`.
-Make sure kubectl's default output format and use kubectl to list CRD's.
-Do not set an output format.
-Failure to do so will result in a reduced score.
-Using kubectl, extract the documentation for the subject specification field of the Certificate Custom Resource and save it to `~/subject.yaml`.
-You may use any output format that kubectl supports.
+- Create a list of all cert-manager Custom Resource Definitions (CRDs) and save it to `~/resources.yaml`.
+- Make sure kubectl's default output format and use kubectl to list CRD's.
+- Do not set an output format.
+- Failure to do so will result in a reduced score.
+- Using kubectl, extract the documentation for the subject specification field of the Certificate Custom Resource and save it to `~/subject.yaml`.
+- You may use any output format that kubectl supports.
 
 **Tasks:**
 
@@ -93,8 +92,10 @@ kubectl get crd certificates.cert-manager.io -o jsonpath='{.spec.versions[*].sch
 
 ## 3. TLS Update in ConfigMap
 
-An NGINX Deploy named `nginx-static` is running in the `nginx-static` NS. It is configured using a CfgMap named `nginx-config`. Update the nginx-config CfgMap to allow only TLSv1.3 connections. Re-create, restart, or scale resources as necessary. By 1 using command to test the changes: 
-`curl --tls-max 1.2 https://web.k8s.local`
+An NGINX Deploy named `nginx-static` is running in the `nginx-static` NS. It is configured using a CfgMap named `nginx-config`. 
+- Update the nginx-config CfgMap to allow only TLSv1.3 connections. Re-create, restart, or scale resources as necessary.
+- By using 1 command to test the changes:
+	- `curl --tls-max 1.2 https://web.k8s.local`
 As TLSV1.2 should not be allowed anymore, the command should fail
 
 **Tasks:**
