@@ -96,7 +96,7 @@ An NGINX Deploy named `nginx-static` is running in the `nginx-static` NS. It is 
 - Update the nginx-config CfgMap to allow only TLSv1.3 connections. Re-create, restart, or scale resources as necessary.
 - By using 1 command to test the changes:
 	- `curl --tls-max 1.2 https://web.k8s.local`
-As TLSV1.2 should not be allowed anymore, the command should fail
+    - As TLSV1.2 should not be allowed anymore, the command should fail
 
 **Tasks:**
 
@@ -115,14 +115,20 @@ kubectl get cm nginx-config -n nginx-static -o yaml > configmap.yaml
 ```
 
 vim `configmap.yaml`
-Delete the TLSv1.2 from the CM
+- Delete the TLSv1.2 from the ConfigMap
 
 ```bash
 # Edit the configmap.yaml to remove TLSv1.2
-kubectl apply -f configmap.yaml
-kubectl rollout restart deployment nginx-static -n nginx-static
 
+kubectl apply -f configmap.yaml
+
+kubectl rollout restart deployment nginx-static -n nginx-static
+```
+
+Take a backup of deployment and re-deploy.
+```bash
 K get deploy nginx-static -o yaml > deploy.yaml
+
 K delete deploy nginx-static
 
 K create -f deploy.yaml
@@ -131,9 +137,10 @@ K create -f deploy.yaml
 ## 4. Create Ingress for Deployment
 
 Create a new ingress resource named `echo` in `echo-sound` namespace.
+
 With the following tasks:
-Expose the deployment with a service named `echo-service` on `http://example.org/echo` using `Service port 8080 type=NodePort`
-The availability of Service `echo-service` can be checked using the following command which should return 200:
+- Expose the deployment with a service named `echo-service` on `http://example.org/echo` using `Service port 8080 type=NodePort`.
+- The availability of Service `echo-service` can be checked using the following command which should return `200`:
 
 **Tasks:**
 - Create service named `echo-service` with `type=NodePort` on port 8080
@@ -146,10 +153,13 @@ kubectl expose deployment nginx-deploy --name=echo-service --type=NodePort --por
 ```
 `service/echo-service` should be created.
 
+
+
 Copy `ingress.yaml` from documentation
+
 Vim `ingress.yaml`
-Add `host: {Hostname}`
-Add service details, earlier created
+- Add `host: {Hostname}`
+- Add service details, earlier created
 `Port number : 8080`
 `Path: /`
 
@@ -165,7 +175,7 @@ spec:
   ingressClassName: nginx
   rules:
   - host: example.org/echo
-	http:
+    http:
       paths:
       - path: /
         pathType: Prefix
@@ -180,11 +190,15 @@ spec:
 kubectl apply -f ingress.yaml
 ```
 
+--- 
+
 ## 5. Gateway API Migration
 You have an existing web application deployed in a Kubernetes cluster using an Ingress resource named `web`. You must migrate the existing Ingress configuration to the new Kubernetes Gateway API, maintaining the existing HTTPS access configuration.
-Tasks :
+
+**Tasks** :
 - Create a Gateway resource named `web-gateway` with hostname `gateway.web.k8s.local` that maintains the existing TLS and listener configuration from the existing Ingress resource named `web`.
 - Create an resource named `web-route` with hostname `gateway.web.k8s.local` that maintains the existing routing rules from the current Ingress resource named `web`.
+  
 Note:
 	A GatewayClass named `nginx-class` is already installed in the cluster.
 
@@ -196,8 +210,8 @@ k describe ingress web
 
 k get svc
 ```
-get `gateway.yaml` from documentation
-Replace values from the info from `k describe ingress`
+Get `gateway.yaml` from documentation
+- Replace values from the info from `k describe ingress`
 ```yaml
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
@@ -209,7 +223,7 @@ spec:
   - name: https
     protocol: HTTPS
     port: 443
-	hostname: "gateway.web.k8s.local"
+    hostname: "gateway.web.k8s.local"
 	tls:
 	  mode: Terminate
 	  certificateRefs:
@@ -236,7 +250,7 @@ spec:
         value: /
     backendRefs:
     - name: web-service
-      port: 80 // Check from k get svc
+      port: 80 					// Check from k get svc
 ```
 
 -------------------------------------
@@ -261,7 +275,7 @@ metadata:
   namespace: project-r500
 spec:
   parentRefs:
-    - name: main   # use the name of the existing Gateway
+    - name: main   		# use the name of the existing Gateway
   hostnames:
     - "r500.gateway"
   rules:
@@ -316,22 +330,24 @@ Web Desktop App
 
 ## 6. Add Sidecar and Shared Volume
 
-Update the existing deployment wordpress, adding a sidecar container named sidecar using the busybox:stable image to the existing pod.
-The new sidecar container has to run the following command : `"/bin/sh -c "tail -f /var/log/wordpress.log"` use a volume mounted at `/var/log` to make the log file `wordpress.log` available to the co-located container
+Update the existing deployment wordpress, adding a sidecar container named sidecar using the `busybox:stable` image to the existing pod.
+
+The new sidecar container has to run the following command : `"/bin/sh -c "tail -f /var/log/wordpress.log"` use a volume mounted at `/var/log` to make the log file `wordpress.log` available to the co-located container.
 
        `OR`
 	   
 A legacy app needs to be integrated into the Kubernetes built-in logging architecture (i.e. kubectc logs). Adding a streaming co-located container is a good and common way to accomplish this requirement.
-Task
+
+**Task**
 - Update the existing Deployment synergy-deployment, adding a co-located container named sidecar using the `busybox:stable` image to the existing Pod.
 - The new co-located container has. to run the following command: `/bin/sh -c "tail -f /var/log/synergy-deployment.log"`
-- Use a Volume mounted at `/var/log` to make the log file synergy-deployment.log available to the co located container.
+- Use a Volume mounted at `/var/log` to make the log file `synergy-deployment.log` available to the co-located container.
 - Do not modify the specification of the existing container other than adding the required.
-Hint: Use a shared volume to expose the log file between the main application container and the sidecar
+Hint: Use a shared volume to expose the log file between the main application container and the sidecar.
 
 **Tasks:**
-- Update `synergy-deployment` with sidecar using `busybox:stable`
-- Share `/var/log/synergy-deployment.log` via `emptyDir` volume
+- Update `synergy-deployment` with sidecar using `busybox:stable`.
+- Share `/var/log/synergy-deployment.log` via `emptyDir` volume.
 
 **Solution:**
 1. Add a sidecar container,
@@ -351,8 +367,8 @@ OR
 cp source_file copy_file
 ```
 
-Edit the Deployment to Add Sidecar
-Edit the deployment using the following command:
+- Edit the Deployment to Add Sidecar
+- Edit the deployment using the following command:
 
 ```bash
 kubectl edit deploy neokloud-deployment
@@ -437,7 +453,7 @@ kubectl describe pod <pod-name>
 kubectl logs -f <pod-name> -c sidecar
 ```
 
-You should now see the sidecar container tailing /var/log/neokloud.log.
+You should now see the sidecar container tailing `/var/log/neokloud.log`.
 
 ## 7. PVC + Mount to Deployment
 
@@ -446,10 +462,14 @@ You should now see the sidecar container tailing /var/log/neokloud.log.
 - Mount it inside existing Deployment
 
 A Persistent Volume already exists and is retained for reuse.
+
+
 Create a PVC named `MariaDB` in the mariadb namespace as follows
 - Access mode `ReadWriteOnce`
 - Storage capacity `250Mi`
+
 Edit the `maria-deployment` in the file located at `maria-deploy.yaml` to use the newly created PVC.
+
 Verify that the deployment is running and is stable.
 
 Copy a `pvc.yaml` from documentation
@@ -468,9 +488,12 @@ spec:
       storage: 250Mi
 ```
 `k edit deploy mariadb`
+
 Add the PVC Claim name under `spec.template.spec.volumes.persistentVolumeClaim.claimName`
 
 `k get pvc -n mariadb` should show the status as `Bound`
+
+---
 
 ## 8. ArgoCD Install with Helm (No CRDs)
 
@@ -590,7 +613,7 @@ k scale deployment wordpress -n namespace --replicas=0
 ```
 
 ```bash
-k edit deployment wordpress`
+k edit deployment wordpress
 ```
 
 Edit inside both the containers
@@ -612,6 +635,7 @@ Capacity:
 ## 11. Least Permissive NetworkPolicy
 
 There are 2 deployments. Frontend in `frontend` namespace, Backend in `backend` namespace. Create a Network Policy to have interaction between frontend & backend deployments. 
+
 The network policy has to be least permissive.
 
 ```yaml
@@ -636,7 +660,7 @@ spec:
           app: frontend
     ports:
     - protocol: TCP
-      port: 8080 // check the service
+      port: 8080 		// check the service
 ```
 
 ## 12. Install CNI: Flannel vs Calico
@@ -663,6 +687,7 @@ wget https://raw.githubusercontent.com/projectcalico/calico/v3.28.3/manifests/cu
 `vim custom-resources.yaml` and replace the `cidr:` with the above copied cidr value.
 
 `k create -f custom-resources.yaml` Will take 4-5 minutes to create all the pods.
+
 `k get pods -n calico-system` to check if all the pods are running.
 
 ### ii) **Flannel:**
@@ -676,18 +701,22 @@ curl -sL https://raw.githubusercontent.com/coreos/flannel/master/Documentation/k
   ```bash
    k logs pod-flannel -n kube-flannel
   ```
+  
 - `k edit cm kube-flannel-cfg -n kube-flannel`
 - `k delete pod kube-flannel-**** -n kube-flannel`
 
 - The Daemonset will create new pods of flannel, and it'll work.
 
+--- 
 ## 12. HPA with Autoscaling v2
 
 Create a new HorizontalPodAutoscaler [HPA] named `apache-server` in the `autoscale` namespace.
-Tasks :
+
+**Tasks** :
 - This HPA must target the existing deployment called `apache-deployment` in the namespace.
 - Set the HPA to target for CPU usage per Pod.
-- Configure the HPA to have a minimum of 1 pod and maximum of 4 pods. Have to set the downscale stabilization window to 30 seconds.
+- Configure the HPA to have a minimum of 1 pod and maximum of 4 pods.
+- Have to set the downscale stabilization window to 30 seconds.
 
 Copy the 3rd `hpa.yaml` from the documentation
 
@@ -734,6 +763,7 @@ Tasks:
 - Create NodePort service using same label
 
 K edit deploy
+
 Inside `spec.template.spec.containers`
 
 ```yaml
@@ -749,7 +779,8 @@ spec:
 k get deploy --show-labels #Use the labels while creating the service
 ```
 
-Copy a Nodeport service file from doc. Replace the labels with the above labels.
+Copy a Nodeport service file from doc. 
+- Replace the labels with the above labels.
 
 ```yaml
 apiVersion: v1
@@ -773,14 +804,17 @@ spec:
 
 You're working in a Kubernetes cluster with an existing Deployment named `busybox-logger` running in a namespace called `priority`.
 The cluster already has at least one user-defined Priority Class
+
 Perform the following tasks:
 1. Create a new Priority Class named `high-priority` for user workloads. The value of this Priority Class should be exactly one less than the highest existing user-defined Priority Class value.
-2. Patch the existing Deployment `busybox-logger` in the `priority` namespace to use the newly created high-priority Priority Class.
+2. Patch the existing Deployment `busybox-logger` in the `priority` namespace to use the newly created `high-priority` Priority Class.
 
 Get `PC.yaml` from documentation
 
 Do `k get pc` to find the value of highest priority.
+
 The PriorityClass which starts with a prefix of `system-` are not user-defined PriorityClass. Don't consider their value.
+
 ```yaml
 apiVersion: scheduling.k8s.io/v1
 kind: PriorityClass
@@ -804,12 +838,15 @@ Add the below field in `spec.template.spec`
 	  priorityClassName: high-priority
 ```
 
+---
+
+
 ## 16. Kubeconfig Extraction
 
 You're asked to extract the following information out of kubeconfig file `/opt/course/l/kubeconfig` on cka9412 :
  - Write all kubeconfig context names into `/opt/course/l/contexts` , one per line
  - Write the name of the current context into `/opt/course/l/current-context`
- - Write the client-key of user account—base64-  decoded into `/opt/course/l/cert`
+ - Write the client-key of user account-base64-  decoded into `/opt/course/l/cert`
 
 **Tasks:**
 
@@ -851,7 +888,9 @@ The file will contain the Pod name
 
 ## 18. Kustomize HPA Migration
 
-Previously the application api-gateway used some external autoscaler which should now be replaced with a HorizontalPodAutoscaler (HPA). The application has been deployed to Namespaces `api-gateway-staging` and `api-gateway-prod` like this:
+Previously the application api-gateway used some external autoscaler which should now be replaced with a HorizontalPodAutoscaler (HPA). 
+
+The application has been deployed to Namespaces `api-gateway-staging` and `api-gateway-prod` like this:
 ```bash
 kubectl kustomize /opt/course/5/api—gateway/staging
 kubectl kustomize /opt/course/5/api—gateway/prod
@@ -859,8 +898,8 @@ kubectl kustomize /opt/course/5/api—gateway/prod
 
 Using the Kustomize config at `/opt/course/5/api-gateway` do the following:
 - Remove the ConfigMap `horizontal—scaling—config` completely.
-- Add HPA named `api-gateway` for the Deployment `api-gateway` with min 2 and max 4 replicas. It should scale at 50% average CPU utilisation
-- In prod the HPA should have max 6 replicas
+- Add HPA named `api-gateway` for the Deployment `api-gateway` with min 2 and max 4 replicas. It should scale at `50%` average CPU utilisation
+- In prod the HPA should have max `6` replicas
 - Apply your changes for staging and prod so they're reflected in the cluster
 
 **Tasks:**
@@ -871,7 +910,7 @@ Using the Kustomize config at `/opt/course/5/api-gateway` do the following:
 - Apply using `kubectl kustomize`
 
 
-Remove the HPA from ConfigMap in 3 directory: Base, staging, prod
+Remove the HPA from ConfigMap in 3 directory: Base, Staging, Prod
 1. Remove the ConfigMap horizontal-scaling-config
    - Edit files `base/api-gateway.yaml`, `staging/api-gateway.yaml` and `prod/api-gateway.yaml` and remove the ConfigMap.
    - Locate and delete the ConfigMap manifest file (likely named `horizontal-scaling-config.yaml`) in `/opt/course/5/api-gateway/base` or wherever it is referenced.
@@ -879,6 +918,7 @@ Remove the HPA from ConfigMap in 3 directory: Base, staging, prod
 2. Add HPA for the Deployment
    - Create a new HPA manifest in the base
    - Create a file `/opt/course/5/api-gateway/base/hpa.yaml` with the following content:
+
 
 **Base HPA Example:**
 
@@ -1172,7 +1212,7 @@ Install the MinlO Operator using Helm in Namespace minio . Then configure and cr
 - Create Namespace `minio`
 - Install Helm chart `minio/operator` into the new Namespace. The Helm Release should be called `minio—operator`
 - Update the Tenant resource in `/opt/course/2/minio-tenant.yaml` to include `enableSFTP: true` under features
-- Create the Tenant resource from `/opt/course/2/minio-tenant`. Yaml It is not required for MinlO to run properly.
+- Create the Tenant resource from `/opt/course/2/minio-tenant.yaml`. It is not required for MinlO to run properly.
 Installing the Helm Chart and the Tenant resource as requested is enough
 
 **Namespace:** `minio`
