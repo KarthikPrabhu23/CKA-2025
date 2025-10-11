@@ -64,12 +64,10 @@ grep -rl "net.ipv4.ip_forward" /etc/sysctl.d/ /usr/lib/sysctl.d/ /etc/sysctl.con
 
 ## 2. Verify cert-manager CRD
 
-- Create a list of all cert-manager Custom Resource Definitions (CRDs) and save it to `~/resources.yaml`.
-- Make sure kubectl's default output format and use kubectl to list CRD's.
-- Do not set an output format.
-- Failure to do so will result in a reduced score.
-- Using kubectl, extract the documentation for the subject specification field of the Certificate Custom Resource and save it to `~/subject.yaml`.
-- You may use any output format that kubectl supports.
+- Create a list of all `cert-manager` Custom Resource Definitions (CRDs) and save it to `~/resources.yaml`.
+	- Make sure kubectl's default output format and use kubectl to list CRD's. Do not set an output format.
+- Using kubectl, extract the documentation for the subject specification field of the `Certificate` Custom Resource and save it to `~/subject.yaml`.
+	- You may use any output format that kubectl supports. If unsure, use the default output format.
 
 **Tasks:**
 
@@ -93,7 +91,8 @@ kubectl get crd certificates.cert-manager.io -o jsonpath='{.spec.versions[*].sch
 ## 3. TLS Update in ConfigMap
 
 An NGINX Deploy named `nginx-static` is running in the `nginx-static` NS. It is configured using a CfgMap named `nginx-config`. 
-- Update the nginx-config CfgMap to allow only TLSv1.3 connections. Re-create, restart, or scale resources as necessary.
+- Update the `nginx-config` ConfigMap to allow only TLSv1.3 connections. Re-create, restart, or scale resources as necessary.
+- Make the TLS immutable.
 - By using 1 command to test the changes:
 	- `curl --tls-max 1.2 https://web.k8s.local`
     - As TLSV1.2 should not be allowed anymore, the command should fail
@@ -119,7 +118,20 @@ vim `configmap.yaml`
 
 ```bash
 # Edit the configmap.yaml to remove TLSv1.2
+```
 
+Add `immutable: true` in the `configmap.yaml`.
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tls-config
+immutable: true
+data:
+  TLS_MIN_VERSION: TLSv1.2
+```
+```bash
 kubectl apply -f configmap.yaml
 
 kubectl rollout restart deployment nginx-static -n nginx-static
@@ -133,6 +145,7 @@ K delete deploy nginx-static
 
 K create -f deploy.yaml
 ```
+----
 
 ## 4. Create Ingress for Deployment
 
@@ -193,11 +206,14 @@ kubectl apply -f ingress.yaml
 --- 
 
 ## 5. Gateway API Migration
+
 You have an existing web application deployed in a Kubernetes cluster using an Ingress resource named `web`. You must migrate the existing Ingress configuration to the new Kubernetes Gateway API, maintaining the existing HTTPS access configuration.
 
 **Tasks** :
 - Create a Gateway resource named `web-gateway` with hostname `gateway.web.k8s.local` that maintains the existing TLS and listener configuration from the existing Ingress resource named `web`.
-- Create an resource named `web-route` with hostname `gateway.web.k8s.local` that maintains the existing routing rules from the current Ingress resource named `web`.
+- Create an HTTPRoute named `web-route` with hostname `gateway.web.k8s.local` that maintains the existing routing rules from the current Ingress resource named `web`.
+
+- You can test Gateway API config with the following command: `curl https://gateway.web.k8s.local`
   
 Note:
 	A GatewayClass named `nginx-class` is already installed in the cluster.
@@ -339,10 +355,10 @@ The new sidecar container has to run the following command : `"/bin/sh -c "tail 
 A legacy app needs to be integrated into the Kubernetes built-in logging architecture (i.e. kubectc logs). Adding a streaming co-located container is a good and common way to accomplish this requirement.
 
 **Task**
-- Update the existing Deployment synergy-deployment, adding a co-located container named sidecar using the `busybox:stable` image to the existing Pod.
-- The new co-located container has. to run the following command: `/bin/sh -c "tail -f /var/log/synergy-deployment.log"`
+- Update the existing Deployment `synergy-deployment`, adding a co-located container named `sidecar` using the `busybox:stable` image to the existing Pod.
+- The new co-located container has to run the following command: `/bin/sh -c "tail -f /var/log/synergy-deployment.log"`
 - Use a Volume mounted at `/var/log` to make the log file `synergy-deployment.log` available to the co-located container.
-- Do not modify the specification of the existing container other than adding the required.
+	- Do not modify the specification of the existing container other than adding the required volume mount.
 Hint: Use a shared volume to expose the log file between the main application container and the sidecar.
 
 **Tasks:**
@@ -807,6 +823,7 @@ The cluster already has at least one user-defined Priority Class
 Perform the following tasks:
 1. Create a new Priority Class named `high-priority` for user workloads. The value of this Priority Class should be exactly one less than the highest existing user-defined Priority Class value.
 2. Patch the existing Deployment `busybox-logger` in the `priority` namespace to use the newly created `high-priority` Priority Class.
+3. Ensure that the `busybox-logger` deployment rolls out with the new PriorityClass.
 
 **Solution:**
 
