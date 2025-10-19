@@ -32,7 +32,7 @@ sudo systemctl start cri-docker.service
 
 Modify the parameters
 ```bash
-vim /etc/sysctl.d/99-zcka.conf
+vim /etc/sysctl.d/99-k8s.conf
 
 OR
 
@@ -40,7 +40,7 @@ vim /etc/sysctl.conf
 ```
 
 ```bash
-# Inside /etc/sysctl.d/cka.conf
+# Inside /etc/sysctl.d/k8s.conf
 net.bridge.bridge-nf-call-iptables=1
 net.ipv6.conf.all.forwarding=1
 net.ipv4.ip_forward=1
@@ -50,17 +50,29 @@ net.netfilter.nf_conntrack_max=131072
 sudo sysctl --system
 ```
 
-Verify the changes with `sudo sysctl -p`.
+Verify the changes with `sudo sysctl -p` OR `systemctl status cri-docker`
 
 Troubleshoot:
 - If the parameter value keeps changing after apply,
-- Try to load your file at the last, rename file with a high number: `/etc/sysctl.d/99-zcka.conf`
+- Try to load your file at the last, rename file with a high number: `/etc/sysctl.d/99-k8s.conf`
 
 OR
 To search for the file inside `/etc/sysctl.d/` that contains the string `net.ipv4.ip_forward`, run:
 ```
 grep -rl "net.ipv4.ip_forward" /etc/sysctl.d/ /usr/lib/sysctl.d/ /etc/sysctl.conf
 ```
+
+OR To apply changes only during the runtime: (Not recommended)
+```bash
+sudo sysctl -w net.bridge.bridge-nf-call-iptables=1
+sudo sysctl -w net.ipv6.conf.all.forwarding=1
+sudo sysctl -w net.ipv4.ip_forward=1
+sudo sysctl -w net.netfilter.nf_conntrack_max=131072
+```
+
+Reference: https://kubernetes.io/docs/setup/production-environment/container-runtimes/#install-and-configure-prerequisites
+
+---
 
 ## 2. Verify cert-manager CRD
 
@@ -190,7 +202,7 @@ spec:
   - host: example.org/echo
     http:
       paths:
-      - path: /
+      - path: /     OR   /echo
         pathType: Prefix
         backend:
           service:
@@ -201,6 +213,13 @@ spec:
 ```bash
 # Create ingress.yaml with host `example.org/echo` and path `/`
 kubectl apply -f ingress.yaml
+```
+
+Verify:
+```
+curl -o /dev/null -s -w "%{http_code}\n" http://example.org/echo
+
+k describe ingress echo -n echo-sound
 ```
 
 --- 
@@ -530,7 +549,7 @@ kubectl create namespace argocd
 ```
 Step 2: Render the Argo CD Manifest
 ```
-helm template argo-cd argo/argo-cd \
+helm template argocd argo/argo-cd \
   --version 8.0.17 \
   --namespace argocd \
   --set crds.install=false > argo-template.yaml
@@ -541,7 +560,7 @@ kubectl apply -f argo-template.yaml
 ```
 
 ```bash
-helm install argo-cd argo/argo-cd \
+helm install argocd argo/argo-cd \
   --version 8.0.17 \
   --namespace argocd \
   --set crds.install=false
@@ -815,7 +834,7 @@ metadata:
 spec:
   type: NodePort
   selector:
-    app: nodeport-deployment //Labels from the deployment
+    app: nodeport-deployment   //Labels from the deployment
   ports:
   - port: 80
     protocol: TCP
@@ -847,7 +866,7 @@ apiVersion: scheduling.k8s.io/v1
 kind: PriorityClass
 metadata:
   name: high-priority
-value: 100000
+value: 9999999
 globalDefault: false
 ```
 
@@ -867,6 +886,11 @@ Add the below field in `spec.template.spec`
 ```
 	spec:
 	  priorityClassName: high-priority
+```
+
+Restart the deployment:
+```bash
+k rollout restart deployment busybox-logger -n priority
 ```
 ---
 
@@ -1085,10 +1109,13 @@ Store in:
 
 Create a new named `local-kiddie` with the provisioner `rancher.io/local-path`.
 - Set the volumeBindingMode to `WaitForFirstConsumer`
-- Configure the StorageClass to default StorageClass
-- Do not modify any existing Deployment or PersistentVolumeClaim
+- Configure the StorageClass to default StorageClass.
+- Do not modify any existing Deployment or PersistentVolumeClaim.
 
 **Solution:**
+
+If another StorageClass is already set as default, remove that annotation first.
+Make `storageclass.kubernetes.io/is-default-class: "false"` for the other StorageClass.
 
 ```yaml
 apiVersion: storage.k8s.io/v1
@@ -1106,8 +1133,6 @@ Apply it with:
 ```bash
 kubectl apply -f storageclass.yaml
 ```
-
-Make `storageclass.kubernetes.io/is-default-class: "false"` for the other StorageClass.
 
 Use patch
 `k patch sc local-kiddie -p '{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class:"true"}}}'`
