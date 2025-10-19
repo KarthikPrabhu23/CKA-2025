@@ -682,7 +682,7 @@ spec:
 ```
 ---
 
-## 11. Install CNI: Flannel vs Calico
+## 11. Install CNI: Flannel vs Calico | Configure it to work with the current node’s PodCIDR.
 
 ### i) **Calico: Network policy**
 Dont use `k apply -f`
@@ -767,7 +767,8 @@ spec:
 
 ## 12. Troubleshooting
 
-_(Details not provided)_
+### 12.1 kube-apiserver and kube-scheduler in a cluster were not working, but etcd, kube-controller-manager, and kubelet were. Troubleshoot and fix the issue.
+
 
 ---
 
