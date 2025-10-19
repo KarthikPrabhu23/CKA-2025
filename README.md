@@ -99,6 +99,7 @@ kubectl get crd | grep cert-manager | awk ‘{print $1}’ | xargs -I{} kubectl 
 
 kubectl get crd certificates.cert-manager.io -o jsonpath='{.spec.versions[*].schema.openAPIV3Schema.properties.spec.properties.subject}' > subject.yaml
 ```
+---
 
 ## 3. TLS Update in ConfigMap
 
@@ -286,12 +287,17 @@ spec:
         value: /
     backendRefs:
     - name: web-service
+      kind: Service
       port: 80 					// Check from k get svc
 ```
 
 `k delete ingress web`
 
+
+Verify with `curl https://gateway.web.k8s.local`
+
 -------------------------------------
+
 The team from Project r500 wants to replace their Ingress (Networking.k8s.io) with a Gateway Api gateway.networking.k8s.io) solution. 
 
 The old Ingress is available at `/opt/course/13/ingress.yaml`. Perform the following in Namespace `project-r500` and for the already existing Gateway:
@@ -498,6 +504,8 @@ kubectl logs -f <pod-name> -c sidecar
 
 You should now see the sidecar container tailing `/var/log/neokloud.log`.
 
+---
+
 ## 7. PVC + Mount to Deployment
 
 A Persistent Volume already exists and is retained for reuse.
@@ -509,11 +517,13 @@ Create a PVC named `MariaDB` in the `mariadb` namespace as follows
 **Solution:**
 
 **Tasks:**
-- Create a PVC
-- Mount it inside existing Deployment
+- Create a PVC.
+- Mount it inside existing Deployment.
 - Edit the `maria-deployment` in the file located at `maria-deploy.yaml` to use the newly created PVC.
 
 Verify that the deployment is running and is stable.
+
+Check if PV exists before creating a PVC
 
 Copy a `pvc.yaml` from documentation
 ```yaml
@@ -571,6 +581,8 @@ Step 4: Verify Argo CD Pods
 ```bash
 kubectl get pods -n argocd
 ```
+
+---
 
 ## 9. Divide Node Resources (With Init Containers)
 
@@ -788,6 +800,9 @@ spec:
 
 ### 12.1 kube-apiserver and kube-scheduler in a cluster were not working, but etcd, kube-controller-manager, and kubelet were. Troubleshoot and fix the issue.
 
+crictl ps -a
+systemctl status kubelet
+
 
 ---
 
@@ -932,6 +947,8 @@ spec:
                 - very-important
             topologyKey: "kubernetes.io/hostname"
 ```
+---
+
 ## 15. Deployment on all Nodes - Anti-affinity 
  
 Create a Deployment named `deploy-important` with 3 replicas
@@ -1057,6 +1074,8 @@ Or our topologySpreadConstraints reason didn't match pod topology spread constra
 
 Warning  FailedScheduling  20s (x2 over 22s)  default-scheduler  0/3 nodes are available: 1 node(s) had untolerated taint {node-role.kubernetes.io/control-plane: }, 2 node(s) didn't match pod topology spread constraints. preemption: 0/3 nodes are available: 1 Preemption is not helpful for scheduling, 2 No preemption victims found for incoming pod.
  ```
+
+---
 
 ## 16. ETCD Info Extraction
 
