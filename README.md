@@ -214,6 +214,7 @@ You have an existing web application deployed in a Kubernetes cluster using an I
 - Create an HTTPRoute named `web-route` with hostname `gateway.web.k8s.local` that maintains the existing routing rules from the current Ingress resource named `web`.
 
 - You can test Gateway API config with the following command: `curl https://gateway.web.k8s.local`
+- Delete the Ingress after creating the Gateway.
   
 Note:
 	A GatewayClass named `nginx-class` is already installed in the cluster.
@@ -269,6 +270,8 @@ spec:
       port: 80 					// Check from k get svc
 ```
 
+`k delete ingress web`
+
 -------------------------------------
 The team from Project r500 wants to replace their Ingress (Networking.k8s.io) with a Gateway Api gateway.networking.k8s.io) solution. 
 
@@ -278,6 +281,7 @@ The old Ingress is available at `/opt/course/13/ingress.yaml`. Perform the follo
 
 **Tasks:**
 - Replace Ingress with Gateway + HTTPRoute in `project-r500`
+- Delete the Ingress after creating the Gateway.
 
 **Example Route Snippet:**
 
@@ -341,6 +345,10 @@ Web Desktop App
 ➜ candidate@cka7968:~$ curl r500.gateway:30080/auto
 Web Desktop App
 ```
+
+Delete the Ingress after Gateway API is created:
+
+`k delete ingress web`
 
 -----
 
