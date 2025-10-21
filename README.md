@@ -803,6 +803,37 @@ spec:
 crictl ps -a
 systemctl status kubelet
 
+### 12.2 
+k get nodes:
+The connection to server 172.30.1.2:6443 was refused
+
+crictl ps -a | grep kube
+
+**Solution**:
+
+```bash
+cd /var/log/pods/kube-system_kube-apiserver/kube-apiserver
+cat 5.log
+
+The Log contains error message: ServerName 127.0.0.1:2359 failed to connect
+```
+
+- `2379` is the port number of `kube-apiserver`.
+- `k get pods -n kube-system` shows that pod restarting
+
+- Edit the kube-apiserver manifest
+```bash
+cd /etc/kubernetes/manifests
+vim kube-apiserver.yaml
+
+Check `spec.containers.command` and correct it to:
+
+-- etcd-servers=https:127.0.0.1:2379
+-- secure-port=6443
+
+```
+
+
 
 ---
 
