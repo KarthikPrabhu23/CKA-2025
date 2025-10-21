@@ -96,6 +96,8 @@ k explain certificates.spec.subject > ~/subject.yaml
 OR
 ```bash
 kubectl get crd | grep cert-manager | awk ‘{print $1}’ | xargs -I{} kubectl get crd {} -o yaml >> ~/resources.yaml
+OR
+kubectl get crd | grep cert-manager | awk ‘{print $1}’ | xargs kubectl get crd >> ~/resources.yaml
 
 kubectl get crd certificates.cert-manager.io -o jsonpath='{.spec.versions[*].schema.openAPIV3Schema.properties.spec.properties.subject}' > subject.yaml
 ```
@@ -906,6 +908,7 @@ Get `PC.yaml` from documentation
 Do `k get pc` to find the value of highest priority.
 
 The PriorityClass which starts with a prefix of `system-` are not user-defined PriorityClass. Don't consider their value.
+
 
 ```yaml
 apiVersion: scheduling.k8s.io/v1
