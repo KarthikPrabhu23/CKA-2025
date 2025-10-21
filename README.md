@@ -657,6 +657,26 @@ Calculation Breakdown:
     - Mem = ((Allocatable Mem - (Allocatable Mem x 0.15))/3)
 
 
+Reddit: https://www.reddit.com/r/CKAExam/comments/1mac63y/i_passed_cka_exam_by_the_skin_of_my_teeth/
+```bash
+In case you encounter the "divide resources" question, you will be tasked to assign resources to deployment replicas based on the remaining available resources on the node. The deployment might have initContainer as mine had 3 replicas and two containers per replica which mean that you will divide the remaining resources on 6.
+Quick way to get capacity and consumed resources in one command (you will have to substract to get the remaining resources for cpu):
+kubectl describe node node-x | grep -i allocat -A 8 //write "allocat" exactly
+The output will show Allocatable and Allocated sections. Substract the Allocated from Allocatable to get the remaining resources.
+Then take out 10% out to leave headroom
+divide the remaining on the number of repllicas*container (in my case 3*2)
+Do the same for memory
+run: kubectl set resources ......... --requests=cpu=value1,memory=value2
+
+Note:
+- You have to scale down the deployment to 0 replicas as your first step otherwise you will not get accurate value for the Allocated resources(I made that mistake). scale down, do the math and set resources, then scale up to bring the replicas back.
+- if you watch JAYDEMY channel, you will not see him consider the initContainer and he will just divide by number of replicas. In my opinion, I preferred to include initConainers because if the attribute restartPolicy = Always, it will play as sideCar container and it will need resources as the main container(if you have time, check this attribute in the YAML and decide).
+
+https://www.reddit.com/r/CKAExam/comments/1o7zles/passed_cka_this_week/
+
+ Where I stuck was at dividing resources, and cluster broke down questions. In dividing resources, the CPU is 4, and limit is set to 600 something and we shouldn't touch that as per the question, so dividing resources in 3 pods did not actually help me, the pod just won't start, so as a workaround, I tried experimenting with the values, and finally, with 60m 60Mi requests helped, so don't really know if even after deployment is running with 3 pods correctly, I had gotten the points for that question.
+```
+
 ```bash
 k scale deployment wordpress -n namespace --replicas=0
 ```
@@ -832,6 +852,10 @@ Check `spec.containers.command` and correct it to:
 
 -- etcd-servers=https:127.0.0.1:2379
 -- secure-port=6443
+
+
+systemctl restart kubelet
+Delete the api-server pod. It will restart 
 
 ```
 
